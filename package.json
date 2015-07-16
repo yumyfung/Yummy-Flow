@@ -13,7 +13,7 @@
   "bin": {
     "yummy install": "install.js"
   },
-  "main": "index.js",
+  "main": "gulpfile.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yumyfung/yummy.git"
