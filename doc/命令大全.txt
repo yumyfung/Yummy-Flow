@@ -1,0 +1,64 @@
+声明：以下所有命令中的[]的内容表示可选，你可以加上，也可以不加
+
+
+项目命令：
+
+1、添加项目
+gulp add -d yueren,移动终端\活动类\乐人模板,mobile\event\template_yueren
+
+2、设置当前项目
+gulp set -d yueren
+
+3、删除项目
+gulp delete -d yueren
+
+4、查看所有项目
+gulp jobs
+
+5、查看当前项目
+gulp current
+
+6、提单
+gulp ars
+
+7、上传到233服务器
+gulp upload_233 [-r] [-f 文件1,文件2,...]
+
+8、上传到手机测试服务器
+gulp upload_mobile -d 100 [-r] [-f 文件1,文件2,...]        （100是自定义文件夹，会在手机服务器目录下创建一个命名100的文件夹）
+
+说明：命令7和命令8中的-r和-f是可选参数，两者一般结合来用，-r表示同步资源，-f表示指定文件上传，后面的文件以逗号分割
+
+9、打开项目文件窗口
+gulp open -d yueren
+
+
+快速创建模板命令：
+
+1、创建PC活动模板
+gulp template_event -d 十年_许巍,ten_xuwei [-a xuwei]        
+
+2、创建普通H5活动模板
+gulp template_mobile -d 独家首发,exclusive_debut [-a dujia]
+
+3、创建滑动H5模板
+gulp template_slide -d 乐人佳妮,yueren_jiani [-a jiani]
+
+说明：-a 命令可选，后面的参数是自定义项目名标志，表示创建模板后并把它添加到项目库中，建议加上，不用再手动去添加一次。
+
+
+工具命令：
+
+1、压缩CSS
+gulp minifyCss
+
+2、压缩图片
+gulp minifyImg
+
+3、合并图片
+gulp sprite
+
+
+测试命令（内置测试用例）
+
+gulp test
