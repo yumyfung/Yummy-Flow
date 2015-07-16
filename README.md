@@ -52,7 +52,10 @@ node install.js
 
 答：插件安装失败的情况是可能存在的，有很多情况可能导致安装失败，包括公司网络，node版本过低等，在公司安装时建议配置好代理：
 
-npm config set proxy http://proxy.tencent.com:8080
+```
+npm config set proxy http://proxy.xxx.com:8080
+```
+
 如果确定网络是配置没问题，插件安装还是失败，有可能是node版本过低或者缓存导致的，这时候可以使用命令清除一下缓存，并更新一下node的版本。
 
 ```
