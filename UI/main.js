@@ -24,7 +24,8 @@ app.on('ready', function() {
     "height": 600,
     "center": true,
     "resizable": false,
-    "auto-hide-menu-bar": true
+    "auto-hide-menu-bar": true,
+    "icon": 'UI/favicon.png'
   });
   // 加载登录页面.
   loginWindow.loadUrl('http://dmdc.oa.com/yummy/index.html');
