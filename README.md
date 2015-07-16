@@ -9,6 +9,8 @@ Yummy就是一个基于nodejs和gulp来开发的前端自动化流程工具，�
 ```
 node install.js
 ```
+[查看使用教程](http://yumyfung.github.io/yummy.github.io/)
+
 ## 文件目录体系
 
 ```
