@@ -1,0 +1,50 @@
+﻿html{
+    /*防止IOS屏幕横竖屏切换时文字大小产生变化*/
+    -webkit-text-size-adjust:100%;
+    /*禁用点击的高亮反馈*/
+    -webkit-tap-highlight-color:rgba(0,0,0,0);
+}
+/* 禁止长按链接与图片弹出菜单 */
+a,img{-webkit-touch-callout:none;}
+body,dl,dd,ul,ol,h1,h2,h3,h4,h5,h6,form,input,textarea,p,th,td{margin:0;padding:0;}
+h1,h2,h3,h4,h5,h6{font-size:100%;}
+li{list-style:none;}
+table{border-collapse:collapse;border-spacing:0;}
+input:focus,textarea:focus,button:focus{outline:0;}
+a,a:hover{text-decoration:none;}
+/*解决字体和文字大小在浏览器中没有被继承的问题*/
+button,input,textarea,select{font-family:inherit;font-size:100%;}
+body{font:12px/1.5 "FZLTXIHJW--GB1-0","hiragino sans gb","Helvetica Neue",Helvetica,STHeiTi,Arial,sans-serif;}
+.wrap{position:relative;color:#fff; height: 100%; overflow: hidden;}
+.hide {display: none;}
+/*页面加载提示*/
+.mod_loading{position:absolute;height:100%;left:0;top:0;width:100%;z-index:100;background-color:#b9ccd5;display:-webkit-box;-webkit-box-align:center;}
+.mod_loading .content{ text-align:center;-webkit-box-flex:1;margin:0 80px;}
+.mod_loading .content .progress{height:13px;padding:2px;-webkit-border-radius:17px;border-radius:17px;background-color:#242a39;}
+.mod_loading .content .progress span{display:block;height:13px;-webkit-border-radius:13px;border-radius:13px;background-color:#65cfd5;}
+.mod_loading .content p{line-height:34px;color:#5f696a;}
+
+/*底部固定模块*/
+.mod_function_wrap {position: fixed;bottom: 8px;width: 100%;}
+.mod_function_item {position: absolute;bottom: 0;width: 28px;height: 28px;text-indent: -100px;overflow: hidden;background-size: 28px;background-repeat: no-repeat;}
+.mod_function_wrap .btn_share {right: 25px;background-image: url(slice/2x/btn_share.png);}
+.mod_function_wrap .voice_play {right: 70px;background-image: url(slice/2x/voice_play.png);}
+.mod_function_wrap .voice_pause {right: 70px;background-image: url(slice/2x/voice_pause.png);}
+.mod_function_wrap .slider {position: absolute;left: 50%;bottom: 0;width: 23px;height: 12px;-webkit-transform: translate3d(-50%,-50%,0);}
+.mod_function_wrap .slider span {position: absolute;width: 23px;height: 12px;background-image: url(slice/2x/slider.png);background-size: cover;-webkit-animation: slide_up 2s infinite ease-in-out;}
+.item, .item .box {width: 100%;height: 100%;overflow: hidden;}
+
+@-webkit-keyframes slide_up {
+    0%,30%{opacity: 0;-webkit-transform: translate3d(0,8px,0);}
+    60% {opacity: 1;-webkit-transform: translate3d(0,0,0);}
+    100% {opacity: 0;-webkit-transform: translate3d(0,-6px,0);}
+}
+
+/*测试样式，请无视*/
+.item .box{display: -webkit-box;-webkit-box-align: center;-webkit-box-pack: center;}
+.item h1 {margin: auto;font-size: 24px;}
+.item-1 {background: #048599;}
+.item-2 {background: #349b66;}
+.item-3 {background: #e05365;}
+.item-4 {background: #44a7cb;}
+.item-5 {background: #fc9590;}
