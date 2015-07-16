@@ -1,13 +1,20 @@
 # Yummy
 
-Works on Mac, Windows and Linux OSes that Electron supports (e.g. Yummy UI [does not support Windows XP](https://github.com/atom/electron/issues/691)).
+Yummy就是一个基于nodejs和gulp来开发的前端自动化流程工具，它将前端开发人员常用的样式压缩、图片压缩、合并和上传等一系列繁杂的工作整合起来，提供智能一条龙服务，能够用于辅助团队规范开发，提高团队的工作效率。工欲善其事，必先利其器，对于前端童鞋来说，使用自动化工作流工具可以提高开发和调试的效率，把更多的人力和精力从需求大厦里解套出来，妈妈再也不用担心我天天加班拼切图了。
 
-Yummy is a powerful tool for web developers.
+Yummy工具的优点：
 
-## Installation
+- 跨平台性，适合在windows、mac等OS上运行
+- 基于Javascript语言开发，学习门槛相对较低，更方便团队扩展与维护
+- 通过gulp流式操作，减少频繁的IO操作，速度优于grunt
+-工具的可扩展性强，团队可根据实际情况进行修改使用
+- 支持命令行操作与界面化两种操作方式，命令少而简单，非常容易上手
+- 支持团队沉淀模板接入，提升团队开发效率
 
-Download and install the latest build of yummy for your OS and add it to your projects `package.json` as a `devDependency`:
+## 安装
+
+下载好安装包在要地目录后，运行命令：
 
 ```
-npm install yummy --save-dev
+node install.js
 ```
