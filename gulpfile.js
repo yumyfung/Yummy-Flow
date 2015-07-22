@@ -1,6 +1,6 @@
 ﻿/*============================================================
       @作者：yumyfeng
-      @说明：CutFlow 新一代跨平台的前端构建工具
+      @说明：Yummy 新一代跨平台的前端构建工具
       @版本：V2.0
       @最后编辑：$Author:: yumyfeng       $
                  $Date:: 2015-06-03 22:06:05#$
@@ -27,6 +27,7 @@ var yStamp = require('gulp-ystamp');
 var next = require('gulp-next');
 var iconv = require('iconv-lite');
 var gulpif = require('gulp-if');
+var jsonFormat = require('gulp-json-format');
 
 //工具扩展类
 function Tools(){}
@@ -86,6 +87,7 @@ var config = {
     //命令任务对应表
     taskFun: {},
     jobFilePath: 'config/job.json',
+    baseFilePath: 'config/base.json',
     jobs: null,
     baseJson: null,
     init:  function(){
@@ -93,7 +95,7 @@ var config = {
         var source = fs.readFileSync(this.jobFilePath, {encoding: 'utf8'});
         this.jobs = JSON.parse(source);
         //映射盘初始化及基础数据初始化
-        var base = fs.readFileSync('config/base.json', {encoding: 'utf8'});
+        var base = fs.readFileSync(this.baseFilePath, {encoding: 'utf8'});
         var baseJson = JSON.parse(base);
         this.baseJson = baseJson;
         this.servers = baseJson.servers;
@@ -453,7 +455,8 @@ function taskSetConfig(argv, taskCallback){
         eval(str);
         //同步修改config对象中的属性
         eval(str.replace('config.baseJson', 'config'));
-        fs.writeFileSync('config/base.json', JSON.stringify(config.baseJson));
+        fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
+        gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.baseFilePath)));
         if(!!taskCallback) taskCallback();
     }
 }
@@ -474,7 +477,6 @@ function taskServer(argv, taskCallback){
                 }
                 // config.servers与config.baseJson.servers指向相同对象
                 config.baseJson.servers.push(obj);  
-                fs.writeFileSync('config/base.json', JSON.stringify(config.baseJson));
                 break;
             case 'update':
                 var arr = argv.d.split(',');
@@ -486,14 +488,14 @@ function taskServer(argv, taskCallback){
                     }
                     obj[arr2[0]] = arr2[1];
                 }
-                fs.writeFileSync('config/base.json', JSON.stringify(config.baseJson));
                 break;
 
             case 'delete':
                 config.baseJson.servers.splice(argv.n, 1);
-                fs.writeFileSync('config/base.json', JSON.stringify(config.baseJson));
                 break;
         }
+        fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
+        gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.baseFilePath)));
         if(!!taskCallback) taskCallback();
     }
 }
@@ -519,6 +521,7 @@ function taskAdd(argv, taskCallback){
         var json = config.jobs;
         json[job[0]] = job[1] + "," + job[2];
         fs.writeFileSync(config.jobFilePath, JSON.stringify(json));
+        gulp.src(config.jobFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.jobFilePath)));
         console.log('已成功添加一个工作记录：' + job[0] + ' <==> ' + job[1] + ' ' + job[2]);
         cbDataArr.push('已成功添加一个工作记录：' + job[0] + ' <==> ' + job[1] + ' ' + job[2]);
         if(!!taskCallback) taskCallback(cbDataArr);
@@ -1128,7 +1131,7 @@ UIClass.prototype.uploadCss = function(cb){
                         stream.pipe(minifyCSS({
                             advanced: false,//类型：Boolean 默认：true [是否开启高级优化（合并选择器等）]
                             compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
-                            keepBreaks: true//类型：Boolean 默认：false [是否保留换行]
+                            keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
                         }))
                         .pipe(gulp.dest(that.dir)).pipe(next(function(){
                             // 如果没有同步资源，有可能会因为sprite产生图片

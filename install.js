@@ -7,7 +7,7 @@
 var process = require('child_process');
 
 var globalPlugins = ['gulp', 'electron-prebuilt'];
-var localPlugins = ['gulp', 'iconv-lite','gulp-if','gulp-util','yargs','gulp-uglify','gulp-base64','gulp-rename','gulp-cssimport','gulp.spritesmith','gulp-concat','gulp-minify-css','gulp-tap','gulp-changed','gulp-imagemin','imagemin-pngquant','gulp-tobase64', 'gulp-if', 'iconv-lite', 'gulp-next', 'gulp-ysprite', 'gulp-ystamp', 'electron-prebuilt'];
+var localPlugins = ['gulp', 'iconv-lite','gulp-if','gulp-util','yargs','gulp-uglify','gulp-base64','gulp-rename','gulp-cssimport','gulp.spritesmith','gulp-concat','gulp-minify-css','gulp-tap','gulp-changed','gulp-imagemin','imagemin-pngquant','gulp-tobase64', 'gulp-if', 'iconv-lite', 'gulp-next', 'gulp-ysprite', 'gulp-ystamp', 'electron-prebuilt','gulp-json-format'];
 
 function installPlugins(){
 	console.log('\n开始安装插件，请稍后...');
