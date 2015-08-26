@@ -220,6 +220,7 @@ var Common = {
             .pipe(ySprite({
                 slice: config.dir_local_css + '/slice',
                 sprite: config.dir_local_css + '/sprite',
+                engine: require('phantomjssmith'),
                 callback: function(stream){
                     stream.pipe(yStamp({
                         stamp: {
@@ -846,6 +847,7 @@ function taskTest(argv, taskCallback){
             .pipe(ySprite({
                 slice: 'test/slice',
                 sprite: 'test/sprite',
+                engine: require('phantomjssmith'),
                 callback: function(stream){
                     stream.pipe(yStamp({
                         stamp: {
@@ -970,7 +972,7 @@ function gulpCommandSplit(str){
     var argv = {};
     var parameter = [];
     var checkArr = [];
-    var reg = /(?=.+\s+)(-(\w))\s+?((("|').+?\5(?=\s+))|(\b\S+(?!-\w\s+)\b)|\s*?)/gi;
+    var reg = /(?=.+\s+)(-(\w))\s+?((("|').+?\5(?=\s+))|(\S+(?!-\w\s+))|\s*?)/gi;
 
     // 获取命令名称
     var arr = str.split(/\s+(?=-\w\s+)/g)[0].split(/\s+/g);
@@ -1118,6 +1120,7 @@ UIClass.prototype.uploadCss = function(cb){
         .pipe(ySprite({
             slice: that.cssBasePath + '/slice',
             sprite: that.cssBasePath + '/sprite',
+            engine: require('phantomjssmith'),
             callback: function(stream){
                 stream.pipe(yStamp({
                     stamp: stamp,
