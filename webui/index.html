@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Language" content="zh-cn" />
+    <meta name="author" content="yumyfeng" />
+    <meta name="Copyright" content="yumyfeng" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <link rel="icon" type="image/x-icon" href="favicon.png">
+    <link rel="stylesheet" type="text/css" href="style/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="style/index.css">
+    <title>让代码飞一会儿</title>
+</head>
+<body ondragstart="return false;">
+
+    <div class="wrap">
+
+        <div class="main">
+
+            <div class="sidebar">
+                <div class="logo_box">Yummy</div>
+                <nav class="main_menu">
+                    <a class="menu_item menu_item_flow current"><i></i>工作流</a>
+                    <a class="menu_item menu_item_tool"><i></i>工具</a>
+                </nav>
+                <div class="main_menu_content">
+                    <div class="sidebar_item sidebar_servers">
+                        <ul>
+                            <p class="no_server_tips">你还没有设置任何服务器映射</p>
+                            <!--<li class="main_li current">
+                                <label class="main_nav" href="#">
+                                    <p><input type="radio" class="base_server" name="radio__base"/><span>服务器</span></p>
+                                </label>
+                                
+                            </li>
+                            <li class="main_li">
+                                <label class="main_nav" href="#">
+                                    <p><input type="radio" class="base_server" name="radio__base"/><span>服务器</span></p>
+                                </label>
+                            </li>-->
+                        </ul>
+                    </div>
+                    <div class="sidebar_item" style="display: none">
+                        <ul>
+                            <li class="main_li">
+                                <label for="radio_cssmin" class="main_nav" href="#">
+                                    <p>
+                                        <input type="radio" name="radio__base" data-id="radio_cssmin" id="radio_cssmin"/>
+                                        <span>CSS文件压缩</span>
+                                    </p>
+                                </label>
+                            </li>
+                            <li class="main_li">
+                                <label for="radio_imgmin" class="main_nav" href="#">
+                                    <p>
+                                        <input type="radio" name="radio__base" data-id="radio_imgmin" id="radio_imgmin"/>
+                                        <span>图片压缩</span>
+                                    </p>
+                                </label>
+                            </li>
+                            <li class="main_li">
+                                <label for="radio_sprite" class="main_nav" href="#">
+                                    <p>
+                                        <input type="radio" name="radio__base" data-id="radio_sprite" id="radio_sprite"/>
+                                        <span>图片合并</span>
+                                    </p>
+                                </label>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="child_menu" style="display: none">
+                    <div class="sub_nav_box">
+                        <ul>
+                            <li id="sync_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="sync" id="sync"/>
+                                <label for="sync">同步资源</label>
+                            </li>
+                            <li id="stamp_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" checked class="stamp" id="stamp"/>
+                                <label for="stamp">md5戳</label>
+                            </li>
+                            <li id="folder_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="folder" id="folder"/>
+                                <label for="folder">创建新目录</label>
+                            </li>
+                            <li id="png8_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="png8" id="png8"/>
+                                <label for="png8">png8(α)</label>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="sub_menu">
+                    <a class="btn_create_template" href="#">快速创建模板</a>
+                    <a class="btn_config" href="#">配置</a>
+                </div>
+                <div class="dragbox">
+                    <div class="holder" id="holder"></div>
+                    <div class="inner_tips_box">
+                        <i class="icon_file"></i>
+                        <div class="text">
+                            <p class="inner_tile">拖拽区域</p>
+                            <p class="inner_tips">请将文件拖动至此区域</p>
+                        </div>
+                        <i class="flag flag_1"></i>
+                        <i class="flag flag_2"></i>
+                        <i class="flag flag_3"></i>
+                        <i class="flag flag_4"></i>
+                    </div>
+                </div>
+                <div class="mod_flex_layout__row command_shell">
+                    <input type="text" class="mod_flex_layout__text command_shell_input" placeholder="这里可以像终端一样使用任务命令哦，回车键可以快速发送命令，上下方向键可以快速切换历史命令" />
+                    <a class="mod_flex_layout__btn btn_command_shell" href="###">执行命令</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mod_layer_wrap dir_mobile_layer" id="dir_mobile_layer" style="display: none">
+        <div class="mod_layer">
+            <a class="close mod_layer_wrap_close" href="#">x</a>
+            <h2 class="mod_layer_title">命名文件夹</h2>
+            <div class="content">
+                <p class="mod_flex_layout__row">
+                    <input type="text" placeholder="为上传的内容指定一个文件夹名字哦" class="mod_flex_layout__text mobile_dir"/>
+                </p>
+                <p class="mod_flex_layout__row mod_layer_btn__group">
+                    <a class="mod_layer_btn" href="###">确定</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mod_layer_wrap dir_config_layer" id="dir_config_layer" style="display: none">
+        <div class="mod_layer_anim">
+            <h2 class="mod_layer_title">设置</h2>
+            <div class="setting_menu">
+                <a class="setting_menu_item setting_menu_server current" href="#"><i></i><span>服务器</span></a>
+                <a class="setting_menu_item setting_menu_hosts" href="#"><i class="icon-file-alt"></i><span>hosts</span></a>
+                <a class="setting_menu_item setting_menu_more" href="#"><i></i><span>更多</span></a>
+            </div>
+            <div class="content content_server current">
+                <div class="servers" id="servers">
+                    <!-- <p class="server_item"><a class="btn_view_server" href="#">服务器A</a><i class="btn_server_delete"></i></p>
+                    <p class="server_item"><a class="btn_view_server" href="#">服务器B</a><i class="btn_server_delete"></i></p> -->
+                </div>
+                <a class="btn_add_server" id="btn_add_server" href="#"><strong>+</strong>添加新服务器映射</a>
+            </div>
+            <div class="content content_hosts">
+                <a class="btn_add_hosts" id="btn_add_hosts" href="#"><strong>+</strong>添加新Hosts</a>
+                <div class="hosts_wrap">
+                   <div class="hosts_group_list" id="hosts_group_list">
+                       <ul>
+                           <li>
+                               <a class="btn_update" href="#">update</a>
+                               <a class="btn_delete" href="#">remove</a>
+                               <h3 class="hosts_title"><label><input type="checkbox" groupbox="demo"/>testname</label></h3>
+                               <div class="hosts_list">
+                                   <p class="hosts_list_item"><label><input type="checkbox" group="demo"/><span class="hosts_ip">127.0.0.1</span><span class="hosts_domain">imgcache.gtimg.cn</span></label></p>
+                                   <p class="hosts_list_item"><label><input type="checkbox" group="demo"/><span class="hosts_ip">127.0.0.1</span><span class="hosts_domain">imgcache.gtimg.cn</span></label></p>
+                                   <p class="hosts_list_item"><label><input type="checkbox" group="demo"/><span class="hosts_ip">127.0.0.1</span><span class="hosts_domain">imgcache.gtimg.cn</span></label></p>
+                               </div>
+                           </li>
+                       </ul>
+                   </div>
+                </div>
+            </div>
+            <div class="content content_more">
+                <h3>站点根目录设置</h3>
+                <div class="mod_flex_layout__row root">
+                    <input type="text" readonly placeholder="填写站点根目录" class="mod_flex_layout__text root_text"/>
+                    <a class="mod_flex_layout__btn mod_choose_dir root_file" href="javascript:void(0);">选择目录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mod_layer_wrap create_tpl_layer" id="create_tpl_layer" style="display: none">
+        <div class="mod_layer">
+            <a class="close mod_layer_wrap_close" href="#">x</a>
+            <h2 class="mod_layer_title">快速创建模板</h2>
+            <div class="content">
+                <p class="mod_flex_layout__row tpl_timepre"><label for="input_timepre">自动添加时间前缀：</label><input type="checkbox" checked id="input_timepre"/></p>
+                <p class="mod_flex_layout__row tpl_name">
+                    <label>选择活动模板：</label>
+                    <select id="tpl_select_name">
+                        <option value="template_event">PC活动模板</option>
+                        <option value="template_mobile">H5活动模板</option>
+                        <option value="template_slide">分屏滑动模板</option>
+                    </select>
+                </p>
+                <p class="mod_flex_layout__row tpl_html">
+                    <label>HTML文件夹命名：</label>
+                    <input type="text" placeholder="填写HTML文件夹名字" class="mod_flex_layout__text"/>
+                </p>
+                <p class="mod_flex_layout__row tpl_mediastyle">
+                    <label>样式文件夹命名：</label>
+                    <input type="text" placeholder="填写样式文件夹名字" class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row mod_layer_btn__group">
+                    <a class="mod_layer_btn" href="###">确定</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mod_layer_wrap server_layer" id="server_layer" style="display: none">
+        <div class="mod_layer">
+            <a class="close mod_layer_wrap_close" href="#">x</a>
+            <h2 class="mod_layer_title">添加新服务器映射</h2>
+            <div class="content">
+                <p class="mod_flex_layout__row server_name">
+                    <label>服务器名：</label>
+                    <input type="text" placeholder="填写服务器名字" required class="mod_flex_layout__text"/>
+                </p>
+                <p class="mod_flex_layout__row server_cmd">
+                    <label>执行命令：</label>
+                    <input type="text" placeholder="使用命令执行时的任务名字" required class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row server_dir">
+                    <label>映射路径：</label>
+                    <input type="text" required placeholder="服务器映射在本地的路径" class="mod_flex_layout__text"/> 
+                    <a class="mod_flex_layout__btn mod_choose_dir" href="javascript:void(0);">选择目录</a>
+                </p>
+                <p class="mod_flex_layout__row server_format">
+                    <label>允许格式：</label>
+                    <input type="text" placeholder="填写允许上传到的格式，用 , 隔开" required class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row server_ars">
+                    <label>提单前缀：</label>
+                    <input type="text" placeholder="填写服务器对应的提单前缀" class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row server_site">
+                    <label>外网地址：</label>
+                    <input type="text" placeholder="填写服务器的外网访问链接地址" class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row mod_layer_btn__group">
+                    <a class="mod_layer_btn" href="###">保存</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mod_layer_wrap hosts_layer" id="hosts_layer" style="display: none">
+        <div class="mod_layer">
+            <a class="close mod_layer_wrap_close" href="#">x</a>
+            <h2 class="mod_layer_title">hosts管理</h2>
+            <div class="mod_hosts_form">
+                <p class="mod_flex_layout__row"><input id="hosts_groupname" type="text" class="mod_flex_layout__text" placeholder="填写hosts组名"/></p>
+                <p class="mod_flex_layout__row"><textarea id="hosts_list_content" class="mod_flex_layout__text" placeholder="填写hosts，换行显示"></textarea></p>
+                <p class="mod_flex_layout__row mod_layer_btn__group">
+                    <a class="mod_layer_btn" href="###">保存</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="js/jquery.qrcode.min.js"></script>
+    <script type="text/javascript" src="js/index.js?t=1"></script>
+
+</body>
+</html>

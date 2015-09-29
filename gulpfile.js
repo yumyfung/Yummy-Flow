@@ -1,7 +1,7 @@
 ﻿/*============================================================
       @作者：yumyfeng
       @说明：Yummy 新一代跨平台的前端构建工具
-      @版本：V2.0
+      @版本：V2.0.0
       @最后编辑：$Author:: yumyfeng       $
                  $Date:: 2015-06-03 22:06:05#$
 =============================================================*/
@@ -11,7 +11,6 @@ var fs = require('fs');
 var path = require('path');
 var childProcess = require('child_process');
 var gutil = require('gulp-util');
-var concat  = require('gulp-concat');
 var argv = require('yargs').argv;
 var minifyCSS = require('gulp-minify-css');
 var rename = require('gulp-rename');
@@ -28,18 +27,19 @@ var next = require('gulp-next');
 var iconv = require('iconv-lite');
 var gulpif = require('gulp-if');
 var jsonFormat = require('gulp-json-format');
+var hosts = require('hosts-group');
 
 //工具扩展类
 function Tools(){}
 
 //广度文件夹遍历
-Tools.walk = Tools.prototype.walk = function(walkPath, callback){
+Tools.walk = Tools.prototype.walk = function(walkPath, format, callback){
     var dirList = fs.readdirSync(walkPath);
     var fileList = [];
    
     dirList.forEach(function(item){
       if(fs.statSync(walkPath + '/' + item).isFile()){
-        if(['.jpg','.png','.gif'].contains(path.extname(item))){
+        if(format.contains(path.extname(item))){
           fileList.push(walkPath + '/' + item);
         }
       }
@@ -49,9 +49,94 @@ Tools.walk = Tools.prototype.walk = function(walkPath, callback){
 
     dirList.forEach(function(item){
       if(fs.statSync(walkPath + '/' + item).isDirectory()){
-        Tools.walk(walkPath + '/' + item, callback);
+        Tools.walk(walkPath + '/' + item, format, callback);
       }
     });
+}
+
+//多级路径创建文件(夹)
+Tools.mkDirFileSync = Tools.prototype.mkDirFileSync = function(walkPath, fileContent){
+    function mdf(walkPath, fileContent, deep){
+        if (!fs.existsSync(walkPath)) {
+            mdf(path.dirname(walkPath), fileContent, ++deep);
+        }else return;
+        --deep;
+        console.log(deep);
+        if(deep == 1 && !!fileContent){
+            fs.writeFileSync(walkPath, fileContent);
+        }else {
+            fs.mkdirSync(walkPath);
+        }
+    }
+    mdf(walkPath, fileContent, 1)
+}
+
+//判断一个值是否在数组中
+Array.prototype.contains = function(search){
+    for(var i in this){
+        if(this[i] == search){
+            return true;
+        }
+    }
+    return false;
+}
+
+//数组去重
+Array.prototype.unique = function(){
+ var res = [];
+ var json = {};
+ for(var i = 0; i < this.length; i++){
+    if(!json[this[i]]){
+        res.push(this[i]);
+        json[this[i]] = 1;
+    }
+ }
+ return res;
+}
+
+// 自定义计时函数类
+function TimeCount(){
+    this._times = {};
+}
+
+// 计时开始
+TimeCount.prototype.time = function(label) {
+  this._times[label] = Date.now();
+};
+
+// 计时结束
+TimeCount.prototype.timeEnd = function(label) {
+  var time = this._times[label];
+  if (!time) {
+    throw new Error('No such label: ' + label);
+  }
+  var duration = Date.now() - time;
+  console.log('%s: %dms', label, duration);
+  return duration;
+};
+
+// 对Date的扩展，将 Date 转化为指定格式的String   
+// 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，   
+// 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)   
+// 例子：   
+// (new Date()).format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423   
+// (new Date()).format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
+Date.prototype.format = function(fmt){ 
+  var o = {   
+    "M+" : this.getMonth()+1,                 //月份   
+    "d+" : this.getDate(),                    //日   
+    "h+" : this.getHours(),                   //小时   
+    "m+" : this.getMinutes(),                 //分   
+    "s+" : this.getSeconds(),                 //秒   
+    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
+    "S"  : this.getMilliseconds()             //毫秒   
+  };   
+  if(/(y+)/.test(fmt))   
+    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
+  for(var k in o)   
+    if(new RegExp("("+ k +")").test(fmt))   
+  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+  return fmt;   
 }
 
 //基础参数配置
@@ -90,7 +175,11 @@ var config = {
     baseFilePath: 'config/base.json',
     jobs: null,
     baseJson: null,
+    projection: null,
     init:  function(){
+        Tools.mkDirFileSync(config.baseFilePath, '{}');
+        Tools.mkDirFileSync(config.jobFilePath, '{}');
+        var flagWrite = false;
         //工作项目记录初始化
         var source = fs.readFileSync(this.jobFilePath, {encoding: 'utf8'});
         this.jobs = JSON.parse(source);
@@ -98,9 +187,57 @@ var config = {
         var base = fs.readFileSync(this.baseFilePath, {encoding: 'utf8'});
         var baseJson = JSON.parse(base);
         this.baseJson = baseJson;
+        // 服务器
+        if(!baseJson.servers){
+            baseJson.servers = [
+                {
+                    name: '样式服务器',
+                    cmd: "u233",
+                    dir: "W:/",
+                    format: [
+                        ".css",
+                        ".png",
+                        ".jpg",
+                        ".gif",
+                        ".js",
+                        ".swf"
+                    ],
+                    ars: "/xxx/xxx/xxx/xxx/",
+                    site: "http://xxx.xxx.cn/"
+                }
+            ];
+            flagWrite = true;
+        }
         this.servers = baseJson.servers;
+        // 基础HTML目录
+        if(!baseJson.root_html){
+            baseJson.root_html = 'E:/SvnProject/html';
+            flagWrite = true;
+        }
         this.root_html = baseJson.root_html + '/';
+        // 基础样式目录
+        if(!baseJson.root_mediastyle){
+            baseJson.root_mediastyle = "E:/SvnProject/mediastyle";
+            flagWrite = true;
+        }
         this.root_mediastyle = baseJson.root_mediastyle + '/';
+        // 基础命令 
+        if(!baseJson.task){
+            baseJson.task = {
+                add: "add",
+                del: "delete",
+                set: "set",
+                jobs: "jobs",
+                hosts: "hosts",
+                minifyImg: "minifyImg",
+                minifyCss: "minifyCss",
+                sprite: "sprite",
+                ars: "ars",
+                current: "current",
+                open: "open"
+            };
+            flagWrite = true;
+        }
         //自定义命令
         if(baseJson.task && typeof baseJson.task == 'object'){
             for(var key in baseJson.task){
@@ -109,10 +246,32 @@ var config = {
                 }
             }
         }
+        // 映射关系
+        if(!baseJson.projection){
+            baseJson.projection = [
+                {
+                    "name": "normal",
+                    "rules": [
+                        {
+                            "domain": "imgcache.gtimg.cn",
+                            "localpath": "E:/SvnProject"
+                        }
+                    ]
+                }
+            ];
+            flagWrite = true;
+        }
+        // 补充新版本的定义json结构
+        if(flagWrite){
+            fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
+            gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.baseFilePath)));
+        }
         // 初始化服务器设置
         this.initServer();
         // 模板初始化
         this.initTemplate('template');
+        // 自定义功能模块
+        this.initExtend('extend');
     },
     // 初始化服务器设置
     initServer: function(){
@@ -143,6 +302,22 @@ var config = {
             config.taskFun[rule.command] = taskTemplate;
          }
        }); 
+    },
+    // 自定义功能模块初始化
+    initExtend: function(extendPath){
+        if (!fs.existsSync(extendPath)) {
+            fs.mkdirSync(extendPath);
+        }
+        Tools.walk(extendPath, ['.js'], function(fileList, walkPath){
+            var taskObj;
+            for(var i = 0, len = fileList.length; i < len; i++){
+                taskObj = require('./' + fileList[i]);
+                for(var key in taskObj){
+                    gulp.task(key, taskObj[key]);
+                    config.taskFun[key] = taskObj[key];
+                }
+            }
+        });
     },
     // 设置当前工作目录
     setCurrentJob: function(){
@@ -218,14 +393,15 @@ var Common = {
                 }
             ))
             .pipe(ySprite({
-                slice: config.dir_local_css + '/slice',
+                slice: config.dir_local_css,
                 sprite: config.dir_local_css + '/sprite',
                 engine: require('phantomjssmith'),
                 callback: function(stream){
                     stream.pipe(yStamp({
                         stamp: {
-                            max_age: '2592000',
-                            d: (new Date()).format("yyyyMMddhhmmss")
+                            md5: true,
+                            // d: (new Date()).format("yyyyMMddhhmmss"),
+                            max_age: '2592000'
                         },
                         callback: function(stream, backgroundImgs){
                             //需不需要把相关资源也上传
@@ -351,7 +527,7 @@ var Common = {
         //同步模板html文件夹
         gulp.src('template/' + templateName + '/*.html')
             .pipe(tap(function(file){
-                var content = file.contents.toString().replace(replaceLink[0], replaceLink[1] + cssFolderr + 'index.css" />');
+                var content = file.contents.toString().replace(replaceLink[0], path.join(replaceLink[1], cssFolderr, 'index.css').replace(/\\/g, '/') + '" />');
                 file.contents = new Buffer(content);
             }))
             .pipe(gulp.dest(htmlDirPath))
@@ -611,6 +787,79 @@ function taskCurrent(argv, taskCallback){
     }
 }
 
+// hosts管理
+// gulp hosts -d groupname,127.0.0.1,imgcache.gtimg.cn -f groupname,0 -s groupname,0
+function taskHosts(argv, taskCallback){
+    return function(){
+        for(var key in argv){
+            switch(key){
+                case 'a':
+                    var aArr = argv.a.split(',');
+                    if(aArr.length == 1){
+                        hosts.addGroup(aArr[0]);
+                        console.log('已添加hosts组 => ' + aArr[0]);
+                    }else if(aArr.length == 2){
+                        hosts.addGroup(aArr[0], aArr[1]);
+                        console.log('已添加hosts组 => ' + aArr[0]);
+                    }else if(aArr.length >= 3){
+                        hosts.set(aArr[2], aArr[1], {groupName: aArr[0], disabled: !!aArr[3]});
+                        console.log('已从组' + aArr[0] + '添加hosts => ' + aArr[2] + ' ' + aArr[1]);
+                    }
+                    break;
+
+                case 'd':
+                    var dArr = argv.d.split(',');
+                    if(dArr.length == 1){
+                        hosts.removeGroup(dArr[0]);
+                        console.log('已删除hosts组 => ' + dArr[0]);
+                    }else if(dArr.length == 3){
+                        hosts.remove(dArr[2], dArr[1], dArr[0]);
+                        console.log('已从组' + dArr[0] + '删除hosts => ' + dArr[2] + ' ' + dArr[1]);
+                    }
+                    break;
+
+                case 's':
+                    var sArr = argv.s.split(',');
+                    if(sArr.length == 1){
+                       hosts.activeGroup(sArr[0]); 
+                       console.log('已启用hosts组 => ' + sArr[0]);
+                    }else if(sArr.length == 3){
+                       hosts.active(sArr[2], sArr[1], sArr[0]);
+                       console.log('已从组' + sArr[0] + '启用hosts => ' + sArr[2] + ' ' + sArr[1]);
+                    }
+                    break;
+
+                case 'f':
+                    var fArr = argv.f.split(',');
+                    if(fArr.length == 1){
+                       hosts.disableGroup(fArr[0]); 
+                       console.log('已注释hosts组 => ' + fArr[0]);
+                    }else if(fArr.length == 3){
+                       hosts.disable(fArr[2], fArr[1], fArr[0]);
+                       console.log('已从组' + fArr[0] + '注释hosts => ' + fArr[2] + ' ' + fArr[1]);
+                    }
+                    break;
+
+                case 'l':
+                    console.log('所有hosts如下:');
+                    console.dir(hosts.get());
+                    break;
+            }
+        }
+        if(!!taskCallback) taskCallback();
+    }
+}
+
+// 规则映射管理 
+// gulp projection -a(-f,-d,-s) name,imgcache.gtimg.cn,"E:/SvnProject"
+function taskProjection(argv, taskCallback){
+    return function(){
+        if(argv.a){
+        }
+        if(!!taskCallback) taskCallback();
+    }
+}
+
 //压缩功能，覆盖当前图片
 function taskMinifyImg(argv, taskCallback){
     return function(){
@@ -688,7 +937,7 @@ function taskSprite(argv, taskCallback){
         else {
             var imgPathArr = [];
             //广度搜索config.tools.spriteIn文件夹
-            Tools.walk(config.tools.spriteIn, function(arr, path){
+            Tools.walk(config.tools.spriteIn, ['.jpg','.png','.gif'], function(arr, path){
                 if(!arr.length) return;
                 imgDirArr.push(arr);
                 imgPathArr.push(path);
@@ -718,6 +967,7 @@ function taskSprite(argv, taskCallback){
                         imgName: imgFile + '.png',
                         cssName: imgFile + '.import.css',
                         algorithm: 'binary-tree',
+                        engine: require('phantomjssmith') || 'pixelsmith',
                         padding: 2,
                         cssVarMap: function(sprite) {
                             //替换sprite文件图片名字中的@字符，生成的类名要引用到图片中的名字，不能有@
@@ -766,6 +1016,9 @@ function uploadServer(argv, server, taskCallback){
 //生成ars提单列表
 function taskArs(argv, taskCallback){
     return function(){
+        if (!fs.existsSync(config.base_ars)) {
+            fs.mkdirSync(config.base_ars);
+        }
         console.log('\n*****生成ars提单列表任务*****\n');
         config.setCurrentJob();
         var fileList = [];
@@ -845,14 +1098,15 @@ function taskTest(argv, taskCallback){
                 }
             ))
             .pipe(ySprite({
-                slice: 'test/slice',
+                slice: 'test',
                 sprite: 'test/sprite',
                 engine: require('phantomjssmith'),
                 callback: function(stream){
                     stream.pipe(yStamp({
                         stamp: {
-                            max_age: '2592000',
-                            d: (new Date()).format("yyyyMMddhhmmss")
+                            md5: true,
+                            // d: (new Date()).format("yyyyMMddhhmmss"),
+                            max_age: '2592000'
                         },
                         callback: function(stream){
                             stream.pipe(gulp.dest('test/result'))
@@ -888,6 +1142,9 @@ config.taskFun[config.task.jobs] = taskJobs;
 //查看当前工作记录
 gulp.task(config.task.current, taskCurrent(argv));
 config.taskFun[config.task.current] = taskCurrent;
+//hosts管理
+gulp.task(config.task.hosts, taskHosts(argv));
+config.taskFun[config.task.hosts] = taskHosts;
 //生成ars提单列表
 gulp.task(config.task.ars, taskArs(argv));
 config.taskFun[config.task.ars] = taskArs;
@@ -923,7 +1180,7 @@ gulp.task('default', function() {
         process.stdin.once('data', function (chunk) {
             chunk = chunk.replace(/\r\n/g, '').trim();
             //解决命令有中文时在windows下console输出时会乱码的问题
-            var consoleOutput = iconv.decode(new Buffer(chunk, 'binary'), 'GBK');
+            chunk = iconv.decode(new Buffer(chunk, 'binary'), 'GBK');
             //同一进程中不能多次执行default任务
             if(chunk == 'gulp'){
                console.log('\ngulp任务中执行此命令无效哟...');
@@ -935,7 +1192,7 @@ gulp.task('default', function() {
             if(commandResult){
                 gulpCommandRun(commandResult, function(){
                     console.log('\n-------------------------------------------------------------------------------');
-                    console.log('\n命令 %s 执行完毕...', consoleOutput);
+                    console.log('\n命令 %s 执行完毕...', chunk);
                     console.timeEnd('耗时');
                     loop();
                 });
@@ -948,7 +1205,7 @@ gulp.task('default', function() {
                         console.log(err);
                     }
                     console.log('\n-------------------------------------------------------------------------------');
-                    console.log('\n命令 %s 执行完毕...', consoleOutput);
+                    console.log('\n命令 %s 执行完毕...', chunk);
                     console.timeEnd('耗时');
                     loop();
                 });
@@ -995,6 +1252,13 @@ function gulpCommandSplit(str){
 
     parameter.push(argv);
 
+    // 服务器参数配置
+    for(var key in config.servers){
+        if(arr[1] == config.servers[key].cmd){
+            parameter.push(config.servers[key]);
+        }
+    }
+
     // 模板命令参数配置
     for(var key in config.template){
         if(arr[1] == config.template[key].rule.command){
@@ -1033,9 +1297,9 @@ function uiUploadServer(argv, cb){
 // 打开UI操作
 function taskUI(){
     return function(){
-        var uicommand = childProcess.exec('electron ui/main.js', function(err,stdout,stderr){
+        var uicommand = childProcess.exec('electron webui/main.js', function(err,stdout,stderr){
             if(err){
-                console.log('\n打开Smartgulp界面失败，原因如下：\n');
+                console.log('\n打开Yummy界面失败，原因如下：\n');
                 console.log(err);
             }
         });
@@ -1056,6 +1320,7 @@ function UIClass(argv) {
     this.cssFiles = [];
     this.imgFiles = [];
     this.htmlFiles = [];
+    this.otherFiles = [];
     this.cssBasePath = '';
 }
 
@@ -1073,6 +1338,8 @@ UIClass.prototype.init = function(cb){
             this.imgFiles.push(relativefilePath);
         }else if(['.html','.htm'].contains(extraname)){
             this.htmlFiles.push(allFiles[i]);
+        }else {
+            this.otherFiles.push(allFiles[i]);
         }
     }
     var queen = [];
@@ -1084,6 +1351,9 @@ UIClass.prototype.init = function(cb){
     }
     if(this.htmlFiles.length){
         queen.push(this.uploadHtml);
+    }
+    if(this.otherFiles.length){
+        queen.push(this.uploadFile);
     }
     if(!queen.length){
         cb && typeof cb == 'function' ? cb() : '';
@@ -1103,12 +1373,24 @@ UIClass.prototype.init = function(cb){
     orderRun(this, 0);
 }
 
+// UI上传文件（普通格式）
+UIClass.prototype.uploadFile = function(cb){
+    var that = this;
+    gulp.src(that.otherFiles, {base: config.root_mediastyle})
+        .pipe(gulp.dest(that.dir))
+        .pipe(next(function(){
+            cb && typeof cb == 'function' ? cb() : '';
+        }));
+}
+
 // UI上传样式
 UIClass.prototype.uploadCss = function(cb){
     var that = this;
-    var stamp = {max_age: '2592000'};
-    if(this.argv.t){
-        stamp.d = (new Date()).format("yyyyMMddhhmmss");
+    var stamp = {
+        max_age: '2592000'
+    };
+    if(this.argv.m){
+        stamp.md5 = true;
     }
     gulp.src(that.cssFiles, {base: config.root_mediastyle})
         .pipe(cssimport({extensions: ["!less", "!sass"]}))
@@ -1118,7 +1400,7 @@ UIClass.prototype.uploadCss = function(cb){
             }
         ))
         .pipe(ySprite({
-            slice: that.cssBasePath + '/slice',
+            slice: that.cssBasePath,
             sprite: that.cssBasePath + '/sprite',
             engine: require('phantomjssmith'),
             callback: function(stream){
@@ -1232,6 +1514,7 @@ process.on("message",function(message) {
                 task: config.task,
                 template: config.template,
                 servers: config.servers,
+                hosts: JSON.stringify(hosts.get()),
                 callback: message.callback || ''
             });
             break;
@@ -1248,7 +1531,7 @@ process.on("message",function(message) {
             if(!!commandResult){
                 gulpCommandRun(commandResult, function(cbDataArr){
                     var timeNeed = tcnt.timeEnd('耗时');
-                    process.send({action: 'command', result: message.name + '成功......   耗时：' + timeNeed + 'ms', cbDataArr: cbDataArr, callback: message.callback});
+                    process.send({action: 'command', result: message.name ? (message.name + '成功......   耗时：' + timeNeed + 'ms') : '', cbDataArr: cbDataArr, callback: message.callback});
                 });
             }else {
                 var childCmdProcess = childProcess.exec(message.command, function(err,stdout,stderr){
@@ -1277,70 +1560,7 @@ process.on("message",function(message) {
     
 });
 
-// 对Date的扩展，将 Date 转化为指定格式的String   
-// 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，   
-// 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)   
-// 例子：   
-// (new Date()).format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423   
-// (new Date()).format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
-Date.prototype.format = function(fmt){ 
-  var o = {   
-    "M+" : this.getMonth()+1,                 //月份   
-    "d+" : this.getDate(),                    //日   
-    "h+" : this.getHours(),                   //小时   
-    "m+" : this.getMinutes(),                 //分   
-    "s+" : this.getSeconds(),                 //秒   
-    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
-    "S"  : this.getMilliseconds()             //毫秒   
-  };   
-  if(/(y+)/.test(fmt))   
-    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
-  for(var k in o)   
-    if(new RegExp("("+ k +")").test(fmt))   
-  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
-  return fmt;   
+
+module.exports.run = function(){
+    gulp.run('ui');
 }
-
-//判断一个值是否在数组中
-Array.prototype.contains = function(search){
-    for(var i in this){
-        if(this[i] == search){
-            return true;
-        }
-    }
-    return false;
-}
-
-//数组去重
-Array.prototype.unique = function(){
- var res = [];
- var json = {};
- for(var i = 0; i < this.length; i++){
-    if(!json[this[i]]){
-        res.push(this[i]);
-        json[this[i]] = 1;
-    }
- }
- return res;
-}
-
-// 自定义计时函数类
-function TimeCount(){
-    this._times = {};
-}
-
-// 计时开始
-TimeCount.prototype.time = function(label) {
-  this._times[label] = Date.now();
-};
-
-// 计时结束
-TimeCount.prototype.timeEnd = function(label) {
-  var time = this._times[label];
-  if (!time) {
-    throw new Error('No such label: ' + label);
-  }
-  var duration = Date.now() - time;
-  console.log('%s: %dms', label, duration);
-  return duration;
-};

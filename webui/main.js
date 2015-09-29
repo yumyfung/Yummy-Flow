@@ -28,7 +28,7 @@ app.on('ready', function() {
     "icon": 'UI/favicon.png'
   });
   // 加载登录页面.
-  loginWindow.loadUrl('http://dmdc.oa.com/yummy/index.html');
+  loginWindow.loadUrl('file://' + __dirname + '/index.html');
   //loginWindow.openDevTools({detach:true});
   // Emitted when the window is closed.
 

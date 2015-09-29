@@ -4,12 +4,32 @@ Yummy就是一个基于nodejs和gulp来开发的前端自动化流程工具，�
 
 ## 安装
 
-下载好安装包在要地目录后，运行命令：
+方式一：全局安装
 
 ```
-node install.js
+npm install yummy-yummy -g
+
+yummy install
+
 ```
+方式二：本地安装
+
+```
+npm install yummy-yummy --save
+
+npm link
+
+yummy install
+
+```
+
 [查看使用教程](http://yumyfung.github.io/yummy.github.io/)
+
+## 更新
+
+```
+yummy update
+```
 
 ## 文件目录体系
 

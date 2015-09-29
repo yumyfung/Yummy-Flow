@@ -1,8 +1,8 @@
 {
   "name": "yummy-yummy",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "description": "Yummy is a powerful tool for web developer.",
-  "main": "index.js",
+  "main": "gulpfile.js",
   "directories": {
     "doc": "doc",
     "test": "test"
@@ -11,9 +11,8 @@
     "ui": "gulp ui"
   },
   "bin": {
-    "yummy install": "install.js"
+    "yummy": "./bin/yummy.js"
   },
-  "main": "gulpfile.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yumyfung/yummy.git"
@@ -27,5 +26,6 @@
   "bugs": {
     "url": "https://github.com/yumyfung/yummy/issues"
   },
+  "preferGlobal": true,
   "homepage": "https://github.com/yumyfung/yummy#readme"
 }
