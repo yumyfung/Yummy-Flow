@@ -15,7 +15,7 @@ yummy install
 方式二：本地安装
 
 ```
-npm install yummy-yummy --save
+npm install yummy-yummy --save-dev
 
 npm link
 
