@@ -45,8 +45,8 @@ if(program.update){
 
 // 默认启动界面
 var path = require('path');
-var binPath = path.dirname(path.dirname(childProcess.argv.pop()));
-childProcess.chdir(binPath);
+var binPath = path.dirname(path.dirname(process.argv.pop()));
+process.chdir(binPath);
 require('../gulpfile.js').run();
 
 // 安装插件
