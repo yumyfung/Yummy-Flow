@@ -1,7 +1,7 @@
 ﻿/*============================================================
       @作者：yumyfeng
       @说明：Yummy 新一代跨平台的前端构建工具
-      @版本：V2.0.0
+      @版本：V2.0
       @最后编辑：$Author:: yumyfeng       $
                  $Date:: 2015-06-03 22:06:05#$
 =============================================================*/
@@ -61,7 +61,6 @@ Tools.mkDirFileSync = Tools.prototype.mkDirFileSync = function(walkPath, fileCon
             mdf(path.dirname(walkPath), fileContent, ++deep);
         }else return;
         --deep;
-        console.log(deep);
         if(deep == 1 && !!fileContent){
             fs.writeFileSync(walkPath, fileContent);
         }else {

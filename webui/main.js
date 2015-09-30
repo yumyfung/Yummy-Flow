@@ -25,9 +25,10 @@ app.on('ready', function() {
     "center": true,
     "resizable": false,
     "auto-hide-menu-bar": true,
-    "icon": 'UI/favicon.png'
+    "icon": 'webui/favicon.png'
   });
   // 加载登录页面.
+  //loginWindow.loadUrl('http://dmdc.oa.com/yummy/index.html?t=' + new Date().getTime());
   loginWindow.loadUrl('file://' + __dirname + '/index.html');
   //loginWindow.openDevTools({detach:true});
   // Emitted when the window is closed.
