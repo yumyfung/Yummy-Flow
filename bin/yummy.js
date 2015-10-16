@@ -2,6 +2,19 @@
 var program = require('commander');
 var childProcess = require('child_process');
 
+//数组去重
+Array.prototype.unique = function(){
+ var res = [];
+ var json = {};
+ for(var i = 0; i < this.length; i++){
+    if(!json[this[i]]){
+        res.push(this[i]);
+        json[this[i]] = 1;
+    }
+ }
+ return res;
+}
+
 // 迭代数据更新
 var VERSION =  'v2.0.0';
 var versionAttr = VERSION.replace(/\./g, '');
@@ -121,17 +134,4 @@ function runCMD(cmd, callback){
 		}
 		callback();
 	});
-}
-
-//数组去重
-Array.prototype.unique = function(){
- var res = [];
- var json = {};
- for(var i = 0; i < this.length; i++){
-    if(!json[this[i]]){
-        res.push(this[i]);
-        json[this[i]] = 1;
-    }
- }
- return res;
 }
