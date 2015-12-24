@@ -175,7 +175,15 @@ em {color: #f28c48; }
 .mod_hosts_form input[type="text"] {padding: 0 5px;width: 100%;height: 30px;line-height: 30px;background: #fff;box-sizing: border-box;}
 .mod_layer_wrap .mod_hosts_form textarea {padding: 0 5px;width: 100%;height: 150px;line-height: 1.5;background: #fff;box-sizing: border-box;}
 
+.content_more .btn_update_version {margin-left: 0;width: 100%;}
+
 .waiting_loading {margin: 10px 0;}
+
+.update_wrap {position: fixed;left: 0;top: 0;right: 0;bottom: 0;background: #fff;display: flex;flex-direction: column;align-items: center;justify-content: center;}
+.update_wrap .update_tips {display: none;}
+.update_wrap.updating .check_tips {display: none;}
+.update_wrap.updating .update_tips {display: block;}
+.update_wrap img {margin-top: -156px;}
 
 .line-scale-pulse-out-rapid > div {
   background-color: #1dc892;

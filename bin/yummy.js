@@ -2,6 +2,19 @@
 var program = require('commander');
 var childProcess = require('child_process');
 
+//数组去重
+Array.prototype.unique = function(){
+ var res = [];
+ var json = {};
+ for(var i = 0; i < this.length; i++){
+    if(!json[this[i]]){
+        res.push(this[i]);
+        json[this[i]] = 1;
+    }
+ }
+ return res;
+}
+
 // 迭代数据更新
 var VERSION =  'v2.0.0';
 var versionAttr = VERSION.replace(/\./g, '');
@@ -13,15 +26,15 @@ var preCommand = [
 ];
 // 全局安装命令
 var globalPlugins = {
-	base: ['gulp', 'electron-prebuilt']
+	base: ['gulp@3.9.0', 'electron-prebuilt@0.30.0']
 };
 // 本地安装命令
 var localPlugins = {
-	base: ['gulp', 'iconv-lite','gulp-if','gulp-util','yargs','gulp-uglify','gulp-base64','gulp-rename','gulp-cssimport','gulp.spritesmith','gulp-concat','gulp-minify-css','gulp-tap','gulp-changed','gulp-imagemin','imagemin-pngquant','gulp-tobase64', 'gulp-if', 'iconv-lite', 'gulp-next', 'gulp-ysprite', 'gulp-ystamp', 'electron-prebuilt']
+	base: ['gulp@3.9.0', 'iconv-lite@0.4.8','gulp-if@1.2.5','gulp-util@3.0.4','yargs@1.3.3','gulp-uglify@1.2.0','gulp-base64@0.1.2','gulp-rename@1.2.2','gulp-cssimport@1.3.1"','gulp.spritesmith@3.5.4','gulp-concat2.5.2','gulp-minify-css@1.0.0','gulp-tap@0.1.3','gulp-changed@1.2.1','gulp-imagemin@2.2.1','imagemin-pngquant@4.1.2','gulp-tobase64@1.0.8', 'gulp-if@1.2.5', 'gulp-next', 'gulp-ysprite', 'gulp-ystamp', 'electron-prebuilt@0.30.0']
 };
 
-globalPlugins[versionAttr] = ['phantomjs'];
-localPlugins[versionAttr] = ['phantomjs', 'phantomjssmith', 'hosts-group', 'gulp-json-format', 'gulp-ysprite', 'gulp-ystamp'];
+globalPlugins[versionAttr] = ['phantomjs@1.9.18'];
+localPlugins[versionAttr] = ['phantomjs@1.9.18', 'phantomjssmith@0.7.5', 'hosts-group@0.1.1', 'gulp-json-format@1.0.0', 'gulp-ysprite', 'gulp-ystamp'];
 
 // 命令设置
 program
@@ -122,17 +135,4 @@ function runCMD(cmd, callback){
 		}
 		callback();
 	});
-}
-
-//数组去重
-Array.prototype.unique = function(){
- var res = [];
- var json = {};
- for(var i = 0; i < this.length; i++){
-    if(!json[this[i]]){
-        res.push(this[i]);
-        json[this[i]] = 1;
-    }
- }
- return res;
 }

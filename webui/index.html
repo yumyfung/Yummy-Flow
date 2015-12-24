@@ -83,6 +83,11 @@
                                 <input type="checkbox" checked class="stamp" id="stamp"/>
                                 <label for="stamp">md5戳</label>
                             </li>
+                            <li id="absolute_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="absolute" id="absolute"/>
+                                <label for="absolute">转为绝对路径</label>
+                            </li>
                             <li id="folder_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="folder" id="folder"/>
@@ -181,6 +186,10 @@
                     <input type="text" readonly placeholder="填写站点根目录" class="mod_flex_layout__text root_text"/>
                     <a class="mod_flex_layout__btn mod_choose_dir root_file" href="javascript:void(0);">选择目录</a>
                 </div>
+                <h3>更新版本</h3>
+                <div class="mod_flex_layout__row root">
+                    <a class="mod_flex_layout__btn btn_update_version" id="btn_update_version" href="javascript:void(0);">立即检查更新版本</a>
+                </div>
             </div>
         </div>
     </div>
@@ -264,6 +273,14 @@
             </div>
         </div>
     </div>
+
+    <!-- 升级_S -->
+    <div class="update_wrap" style="display: none">
+        <img src="style/img/loading.gif"/>
+        <p class="check_tips">检查新版本中，请稍候...</p>
+        <p class="update_tips">正在升级新版本，请不要关闭窗口哟...</p>
+    </div>
+    <!-- 升级_E -->
 
     <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
     <script type="text/javascript" src="js/jquery.qrcode.min.js"></script>

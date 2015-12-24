@@ -1,9 +1,9 @@
 ﻿/*============================================================
       @作者：yumyfeng
       @说明：Yummy 新一代跨平台的前端构建工具
-      @版本：V2.0
+      @版本：V2.0.0
       @最后编辑：$Author:: yumyfeng       $
-                 $Date:: 2015-06-03 22:06:05#$
+                 $Date:: 2015-12-24 18:06:05#$
 =============================================================*/
 console.log('\nPlease waiting...\n');
 var gulp = require('gulp');
@@ -28,6 +28,9 @@ var iconv = require('iconv-lite');
 var gulpif = require('gulp-if');
 var jsonFormat = require('gulp-json-format');
 var hosts = require('hosts-group');
+var download = require("gulp-download");
+var unzip = require("gulp-unzip");
+var gulpCopy = require('gulp-copy');
 
 //工具扩展类
 function Tools(){}
@@ -165,7 +168,9 @@ var config = {
         sprite: 'sprite',
         ars: 'ars',
         current: 'current',
-        open: 'open'
+        open: 'open',
+        hosts: 'hosts',
+        update: 'update'
     },
     template: {},
     //命令任务对应表
@@ -233,7 +238,8 @@ var config = {
                 sprite: "sprite",
                 ars: "ars",
                 current: "current",
-                open: "open"
+                open: "open",
+                update: "update"
             };
             flagWrite = true;
         }
@@ -396,12 +402,20 @@ var Common = {
                 sprite: config.dir_local_css + '/sprite',
                 engine: require('phantomjssmith'),
                 callback: function(stream){
+                    var site = '';
+                    if(argv.a){
+                      var cssAbsolutePath = path.join(path.basename(config.root_mediastyle), config.dir_local_css.split(path.basename(config.root_mediastyle))[1]);
+                      site = path.join(config.servers[that.serverId].site, cssAbsolutePath).replace(/(^http(s)?:\/)\S+/, function($0, $1){
+                        return $0.replace($1, $1 + '/');
+                      });
+                    }
                     stream.pipe(yStamp({
                         stamp: {
                             md5: true,
                             // d: (new Date()).format("yyyyMMddhhmmss"),
                             max_age: '2592000'
                         },
+                        absolute: site,
                         callback: function(stream, backgroundImgs){
                             //需不需要把相关资源也上传
                             if(argv.r){
@@ -519,14 +533,14 @@ var Common = {
             timePre = '';
         }
         var htmlFolder = timePre + argv.h;
-        var cssFolderr = timePre + argv.s;
+        var cssFolder = timePre + argv.s;
         var htmlDirPath = path.normalize(path.join(dirHtml, htmlFolder)).replace(/\\/g, '/');
-        var cssDirPath = path.normalize(path.join(dirCss, cssFolderr)).replace(/\\/g, '/');
+        var cssDirPath = path.normalize(path.join(dirCss, cssFolder)).replace(/\\/g, '/');
 
         //同步模板html文件夹
         gulp.src('template/' + templateName + '/*.html')
             .pipe(tap(function(file){
-                var content = file.contents.toString().replace(replaceLink[0], path.join(replaceLink[1], cssFolderr, 'index.css').replace(/\\/g, '/') + '" />');
+                var content = file.contents.toString().replace(replaceLink[0], replaceLink[1] + cssFolder + '/index.css" />');
                 file.contents = new Buffer(content);
             }))
             .pipe(gulp.dest(htmlDirPath))
@@ -904,6 +918,7 @@ function taskMinifyCss(argv, taskCallback){
         }
         gulp.src(srcArr)
             .pipe(rename({'suffix': '.min'}))
+            .pipe(cssimport({extensions: ["!less", "!sass"]}))
             .pipe(tobase64({
                     maxsize: 8,        
                     ignore: /(?!.*\bbase64\b)^.*$/g
@@ -1096,6 +1111,7 @@ function taskTest(argv, taskCallback){
                     ignore: /(?!.*\bbase64\b)^.*$/g
                 }
             ))
+            .pipe(cssimport({extensions: ["!less", "!sass"]}))
             .pipe(ySprite({
                 slice: 'test',
                 sprite: 'test/sprite',
@@ -1117,6 +1133,49 @@ function taskTest(argv, taskCallback){
                     }))
                 }
             }))
+    }
+}
+
+// 升级新版本
+function taskUpdate(argv, taskCallback){
+    return function(){
+        var cbDataArr = [];
+        var lastVersionCheck = childProcess.exec('npm view yummy-yummy version');
+        lastVersionCheck.stdout.on('data', function(data){
+            var data = data.replace(/\r\n|\n/g, '').replace(/\s+/g, '');
+            if(data <= JSON.parse(fs.readFileSync('./package.json', 'utf8')).version){
+                console.log('当前已是最新版本');
+                cbDataArr.push('当前已是最新版本');
+                if(!!taskCallback) taskCallback(cbDataArr, 0);
+                return;
+            }
+            if(!!taskCallback) taskCallback(cbDataArr, 1);
+            download('https://github.com/yumyfung/yummy/archive/master.zip')
+                .pipe(unzip())
+                .pipe(gulp.dest("downloads/"))
+                .pipe(gulpCopy('./', {prefix: 2}))
+                .pipe(next(function(){
+                    childProcess.exec('node ./bin/yummy.js update', function(err,stdout,stderr){
+                        if(err){
+                            console.log(err);
+                            console.log('新版本升级插件失败...');
+                            cbDataArr.push('新版本升级插件失败...');
+                            if(!!taskCallback) taskCallback(cbDataArr, 0);
+                            return;
+                        }
+                        console.log('新版本升级完毕...');
+                        cbDataArr.push('新版本升级完毕...');
+                        if(!!taskCallback) taskCallback(cbDataArr, 2);
+                    });
+                }));
+        });
+        lastVersionCheck.stderr.on('data', function(data){
+            console.log('Yummy tips: Please check your net,maybe it need proxy...');
+            console.log('Yummy tips: 请检查你的网络，可能需要代理...');
+            console.log('stderr: ' + data);
+            cbDataArr.push('stderr: ' + data);
+            if(!!taskCallback) taskCallback(cbDataArr, 0);
+        });
     }
 }
 
@@ -1159,6 +1218,9 @@ config.taskFun[config.task.minifyCss] = taskMinifyCss;
 //基础雪碧图功能
 gulp.task(config.task.sprite, taskSprite(argv));
 config.taskFun[config.task.sprite] = taskSprite;
+//升级新版本
+gulp.task(config.task.update, taskUpdate(argv));
+config.taskFun[config.task.update] = taskUpdate;
 //测试用例
 gulp.task('test', taskTest(argv));
 config.taskFun['test'] = taskTest;
@@ -1220,7 +1282,7 @@ gulp.task('default', function() {
     //稍微延时去除gulp default讨厌的console输出
     setTimeout(function(){
         loop();
-    }, 10)
+    }, 10);
 });
 
 //自定义gulp命令分割器
@@ -1228,7 +1290,7 @@ function gulpCommandSplit(str){
     var argv = {};
     var parameter = [];
     var checkArr = [];
-    var reg = /(?=.+\s+)(-(\w))\s+?((("|').+?\5(?=\s+))|(\S+(?!-\w\s+))|\s*?)/gi;
+    var reg = /(?=.+\s+)(-(\w))\s+?((("|').+?\5(?=\s+))|((?!-\w\s+)\S+)|\s*?)/gi;
 
     // 获取命令名称
     var arr = str.split(/\s+(?=-\w\s+)/g)[0].split(/\s+/g);
@@ -1321,6 +1383,7 @@ function UIClass(argv) {
     this.htmlFiles = [];
     this.otherFiles = [];
     this.cssBasePath = '';
+    this.cssAbsolutePath = '';
 }
 
 // UI初始化
@@ -1331,6 +1394,7 @@ UIClass.prototype.init = function(cb){
         if(extraname == '.css'){
             this.cssBasePath = path.dirname(allFiles[i]);
             var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
+            this.cssAbsolutePath = path.join(path.basename(config.root_mediastyle), path.dirname(allFiles[i]).split(path.basename(config.root_mediastyle))[1]);
             this.cssFiles.push(relativefilePath);
         }else if(['.jpg','.png','.gif'].contains(extraname)){
             var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
@@ -1403,8 +1467,15 @@ UIClass.prototype.uploadCss = function(cb){
             sprite: that.cssBasePath + '/sprite',
             engine: require('phantomjssmith'),
             callback: function(stream){
+                var site = '';
+                if(that.argv.a){
+                  site = path.join(config.servers[that.serverId].site, that.cssAbsolutePath).replace(/(^http(s)?:\/)\S+/, function($0, $1){
+                    return $0.replace($1, $1 + '/');
+                  });
+                }
                 stream.pipe(yStamp({
                     stamp: stamp,
+                    absolute: site,
                     callback: function(stream, backgroundImgs){
                         //需不需要把相关资源也上传
                         var isNeedToUploadImg = !!that.imgFiles.length;
@@ -1528,9 +1599,9 @@ process.on("message",function(message) {
             tcnt.time('耗时');
             var commandResult = gulpCommandSplit(message.command);
             if(!!commandResult){
-                gulpCommandRun(commandResult, function(cbDataArr){
+                gulpCommandRun(commandResult, function(cbDataArr, state){
                     var timeNeed = tcnt.timeEnd('耗时');
-                    process.send({action: 'command', result: message.name ? (message.name + '成功......   耗时：' + timeNeed + 'ms') : '', cbDataArr: cbDataArr, callback: message.callback});
+                    process.send({action: 'command', code: message.code, result: message.name ? (message.name + '成功......   耗时：' + timeNeed + 'ms') : '', cbDataArr: cbDataArr, state: state, callback: message.callback});
                 });
             }else {
                 var childCmdProcess = childProcess.exec(message.command, function(err,stdout,stderr){

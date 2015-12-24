@@ -1,8 +1,9 @@
 ﻿var child_process = require('child_process'); 
 var path = require('path');
-//var win = require('remote').require('browser-window');
+var win = require('remote').getCurrentWindow();
 var dialog = require('remote').require('dialog'); 
 var clipboard = require('remote').require('clipboard');
+//var app = require('remote').require('app');
 
 var menuId = 0;
 var task = null;
@@ -198,7 +199,7 @@ var start_process = function (child_process, indexFile) {
               who: server.name,
               F5: null,
               rules: server.format,
-              child: ['#sync_fun', '#stamp_fun', '#folder_fun', '#png8_fun'],
+              child: ['#sync_fun', '#stamp_fun', '#absolute_fun', '#folder_fun', '#png8_fun'],
               tips: '请把文件拖到这里上传到' + server.name
             };
           };
@@ -266,10 +267,26 @@ var start_process = function (child_process, indexFile) {
           if(message.cbDataArr && message.cbDataArr.length){
             menuLib.print(message.cbDataArr);
           }
+          F5Finish = true;
+          // 升级版本提示特殊处理
+          if(message.code == task['update']){
+            if(message.state == 0){
+              $('.update_wrap').hide();
+              return;
+            }else if(message.state == 1){
+              $('.update_wrap').addClass('updating');
+              return;
+            }else if(message.state == 2){
+              $('.update_wrap').removeClass('updating').hide();
+              menuLib.print(['正在重新启动程序...']);
+              win.reload(); //重新加载页面
+              alert('升级新版本完成！');
+            }
+          }
+          // 命令执行完毕成功提示
           if(message.result){
             $('#holder').append('<p>' + message.result + '</p>');
           }
-          F5Finish = true;
           break;
 
         // 输出有需要的console.log调试信息
@@ -369,7 +386,7 @@ function domInit(cp){
         // 保存设置数据 => 站点根目录
         var root = $('.root_text').val();
         if(root != initData.root_mediastyle){
-          cp.send({action: 'command', 'name': '修改站点根目录', command: 'gulp ' + task['config'] + ' -s root_mediastyle=' + filePath});
+          cp.send({action: 'command', code: task['config'], name: '修改站点根目录', command: 'gulp ' + task['config'] + ' -s root_mediastyle=' + filePath});
         }
         $this.find('.mod_layer_anim').removeClass('play');
         setTimeout(function(){
@@ -443,7 +460,7 @@ function domInit(cp){
           return;
         }
         var str = 'name=' + name + ',cmd=' + cmd + ',dir=' + dir + ',format=' + format + ',ars=' + ars + ',site=' + site;
-        cp.send({action: 'command', name: '更新新服务器' + name + '信息', command: 'gulp server -w update -n '+ sId +' -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
+        cp.send({action: 'command', code: 'server', name: '更新新服务器' + name + '信息', command: 'gulp server -w update -n '+ sId +' -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
         $('#server_layer').hide();
       });
     });
@@ -467,7 +484,7 @@ function domInit(cp){
             hostsArr[i] = hostsArr[i].replace(/#/g, '');
           }
           var hostsLineArr = hostsArr[i].trim().split(/\s+/g);
-          cp.send({action: 'command', name: '添加hosts => ' + hostsLineArr[0] + ' ' + hostsLineArr[1], command: 'gulp ' + task['hosts'] + ' -a ' + groupName + ',' + hostsLineArr[0] + ',' + hostsLineArr[1] + ',' + disabled, callback: 'callback_init_data'});
+          cp.send({action: 'command', code: task['hosts'], name: '添加hosts => ' + hostsLineArr[0] + ' ' + hostsLineArr[1], command: 'gulp ' + task['hosts'] + ' -a ' + groupName + ',' + hostsLineArr[0] + ',' + hostsLineArr[1] + ',' + disabled, callback: 'callback_init_data'});
         }
         $('#hosts_layer').hide();
       });
@@ -491,7 +508,7 @@ function domInit(cp){
       $('#hosts_layer .mod_layer_btn').off('click');
       $('#hosts_layer .mod_layer_btn').on('click', function(){
         // 删除原hosts组
-        cp.send({action: 'command', command: 'gulp ' + task['hosts'] + ' -d ' + oldGroupName});
+        cp.send({action: 'command', code: task['hosts'], command: 'gulp ' + task['hosts'] + ' -d ' + oldGroupName});
         var groupName = $('#hosts_groupname').val().trim();
         var hostsContent = $('#hosts_list_content').val().trim();
         if(!groupName || !hostsContent){
@@ -511,9 +528,9 @@ function domInit(cp){
           }
           var hostsLineArr = hostsArr[i].trim().split(/\s+/g);
           if(i == len - 1){
-            cp.send({action: 'command', name: '更新hosts组 => ' + groupName, command: 'gulp ' + task['hosts'] + ' -a ' + groupName + ',' + hostsLineArr[0] + ',' + hostsLineArr[1] + ',' + disabled, callback: 'callback_init_data'});
+            cp.send({action: 'command', code: task['hosts'], name: '更新hosts组 => ' + groupName, command: 'gulp ' + task['hosts'] + ' -a ' + groupName + ',' + hostsLineArr[0] + ',' + hostsLineArr[1] + ',' + disabled, callback: 'callback_init_data'});
           }else {
-            cp.send({action: 'command', command: 'gulp ' + task['hosts'] + ' -a ' + groupName + ',' + hostsLineArr[0] + ',' + hostsLineArr[1] + ',' + disabled});
+            cp.send({action: 'command', code: task['hosts'], command: 'gulp ' + task['hosts'] + ' -a ' + groupName + ',' + hostsLineArr[0] + ',' + hostsLineArr[1] + ',' + disabled});
           }
         }
         $('#hosts_layer').hide();
@@ -523,7 +540,7 @@ function domInit(cp){
     // 删除hosts组
     $('#hosts_group_list').on('click', 'li .btn_delete', function(){
       var groupName = $(this).attr('data-group').trim();
-      cp.send({action: 'command', name: '删除hosts组 => ' + groupName, command: 'gulp ' + task['hosts'] + ' -d ' + groupName, callback: 'callback_init_data'});
+      cp.send({action: 'command', code: task['hosts'], name: '删除hosts组 => ' + groupName, command: 'gulp ' + task['hosts'] + ' -d ' + groupName, callback: 'callback_init_data'});
     });
 
     // hosts全选
@@ -531,10 +548,10 @@ function domInit(cp){
       var groupbox = $(this).find('input[type=checkbox]');
       if(groupbox.attr('checked')){
         $('.hosts_group_list .hosts_list input[type=checkbox][group=' + groupbox.attr('groupbox') + ']').attr('checked', false);
-        cp.send({action: 'command', name: '启用hosts组 => ' + groupbox.attr('groupbox'), command: 'gulp ' + task['hosts'] + ' -s ' + groupbox.attr('groupbox'), callback: 'callback_init_data'});
+        cp.send({action: 'command', code: task['hosts'], name: '启用hosts组 => ' + groupbox.attr('groupbox'), command: 'gulp ' + task['hosts'] + ' -s ' + groupbox.attr('groupbox'), callback: 'callback_init_data'});
       }else {
         $('.hosts_group_list .hosts_list input[type=checkbox][group=' + groupbox.attr('groupbox') + ']').attr('checked', true);
-        cp.send({action: 'command', name: '禁用hosts组 => ' + groupbox.attr('groupbox'), command: 'gulp ' + task['hosts'] + ' -f ' + groupbox.attr('groupbox'), callback: 'callback_init_data'});
+        cp.send({action: 'command', code: task['hosts'], name: '禁用hosts组 => ' + groupbox.attr('groupbox'), command: 'gulp ' + task['hosts'] + ' -f ' + groupbox.attr('groupbox'), callback: 'callback_init_data'});
       }
     });
 
@@ -545,10 +562,10 @@ function domInit(cp){
       var ip = $(this).find('.hosts_ip').text();
       if(group.attr('checked')){
         $('.hosts_group_list .hosts_title input[type=checkbox][groupbox=' + group.attr('group') + ']').attr('checked', true);
-         cp.send({action: 'command', name: '启用hosts => ' + ip + ' ' + domain, command: 'gulp ' + task['hosts'] + ' -s ' + group.attr('group') + ',' + ip + ',' + domain, callback: 'callback_init_data'});
+         cp.send({action: 'command', code: task['hosts'], name: '启用hosts => ' + ip + ' ' + domain, command: 'gulp ' + task['hosts'] + ' -s ' + group.attr('group') + ',' + ip + ',' + domain, callback: 'callback_init_data'});
         return;
       }
-      cp.send({action: 'command', name: '禁用hosts => ' + ip + ' ' + domain, command: 'gulp ' + task['hosts'] + ' -f ' + group.attr('group') + ',' + ip + ',' + domain, callback: 'callback_init_data'});
+      cp.send({action: 'command', code: task['hosts'], name: '禁用hosts => ' + ip + ' ' + domain, command: 'gulp ' + task['hosts'] + ' -f ' + group.attr('group') + ',' + ip + ',' + domain, callback: 'callback_init_data'});
       var selectAll = false;
       $('.hosts_group_list .hosts_list_item input=[type=checkbox][group=' + group.attr('group') + ']').each(function(){
         if($(this).attr('checked')) {
@@ -558,7 +575,6 @@ function domInit(cp){
       });
       $('.hosts_group_list .hosts_title input[type=checkbox][groupbox=' + group.attr('group') + ']').attr('checked', selectAll);
     });
-
 
     // 添加新服务器映射
     $('#btn_add_server').on('click', function(){
@@ -582,7 +598,7 @@ function domInit(cp){
         var ars = $('#server_layer .server_ars .mod_flex_layout__text').val().trim();
         var site = $('#server_layer .server_site .mod_flex_layout__text').val().trim();
         var str = 'name=' + name + ',cmd=' + cmd + ',dir=' + dir + ',format=' + format + ',ars=' + ars + ',site=' + site;
-        cp.send({action: 'command', name: '添加新服务器' + name, command: 'gulp server -w add -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
+        cp.send({action: 'command', code: 'server', name: '添加新服务器' + name, command: 'gulp server -w add -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
         $('#server_layer').hide();
       });
     });
@@ -592,7 +608,13 @@ function domInit(cp){
       if(!confirm('确定删除该服务器映射？')) return;
       var sId = $(this).attr('server-id');
       var server = globalServers[sId];
-      cp.send({action: 'command', name: '删除服务器' + server.name, command: 'gulp server -w delete -n '+ sId, callback: 'callback_init_data_sidebar'});
+      cp.send({action: 'command', code: 'server', name: '删除服务器' + server.name, command: 'gulp server -w delete -n '+ sId, callback: 'callback_init_data_sidebar'});
+    });
+
+    // 升级新版本
+    $('#btn_update_version').on('click', function(){
+      $('.update_wrap').show();
+      cp.send({action: 'command', code: task['update'], name: '升级新版本', command: 'gulp ' + task['update']});
     });
 
     // 打开快速创建活动模板浮层
@@ -615,7 +637,7 @@ function domInit(cp){
       if(!timePre){
         cmd += ' -n';
       }
-      cp.send({action: 'command', name: '创建活动模板', command: cmd});
+      cp.send({action: 'command', code: tplName, name: '创建活动模板', command: cmd});
       $('#create_tpl_layer').hide();
     });
 
@@ -627,7 +649,7 @@ function domInit(cp){
         return;
       }
       globalShellCommand.add(cmd);
-      cp.send({action: 'command', name: '命令 ' + cmd + ' 执行', command: cmd});
+      cp.send({action: 'command', code: 'uishell', name: '命令 ' + cmd + ' 执行', command: cmd});
       $('.command_shell_input').val('');
     }
 
@@ -710,11 +732,14 @@ function domInit(cp){
               if($('#stamp').attr('checked')){
                 cmd += ' -m';
               }
+              if($('#absolute').attr('checked')){
+                cmd += ' -a';
+              }
               if($('#png8').attr('checked')){
                 cmd += ' -p';
               }
               menuLib.print(menuId, result);
-              cp.send({action: 'command', name: globalServers[serverId].name, command: cmd});
+              cp.send({action: 'command', code: 'ui_upload_server', name: globalServers[serverId].name, command: cmd});
               if(globalServers[serverId].ars){
                 menuLib.getArs(result);
               }
@@ -754,7 +779,7 @@ function domInit(cp){
               menuLib.hash[menuId].F5 = function(){
                 var output = path.join(path.dirname(files[0].path), '__smartgulp__');
                 menuLib.print(menuId, result);
-                cp.send({action: 'command', name: '压缩CSS文件', command: 'gulp ' + task['minifyCss'] + ' -o ' + output + ' -f "' + result.join(',') + '"'});
+                cp.send({action: 'command', code: task['minifyCss'], name: '压缩CSS文件', command: 'gulp ' + task['minifyCss'] + ' -o ' + output + ' -f "' + result.join(',') + '"'});
                 $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
                 menuLib.showTaskWaitingTips();
               };
@@ -769,7 +794,7 @@ function domInit(cp){
                 if($('#png8').attr('checked')){
                   cmd += ' -p';
                 }
-                cp.send({action: 'command', name: '压缩图片', command: cmd});
+                cp.send({action: 'command', code: task['minifyImg'], name: '压缩图片', command: cmd});
                 $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
                 menuLib.showTaskWaitingTips();
               };
@@ -784,7 +809,7 @@ function domInit(cp){
                 if($('#png8').attr('checked')){
                   cmd += ' -p';
                 }
-                cp.send({action: 'command', name: '合并图片', command: cmd});
+                cp.send({action: 'command', code: task['sprite'], name: '合并图片', command: cmd});
                 $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
                 menuLib.showTaskWaitingTips();
               };
