@@ -28,7 +28,8 @@ yummy install
 ## 更新
 
 ```
-yummy update
+gulp update
+
 ```
 
 ## 文件目录体系
