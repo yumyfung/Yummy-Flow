@@ -34,7 +34,7 @@ var localPlugins = {
 };
 
 globalPlugins[versionAttr] = ['phantomjs@1.9.18'];
-localPlugins[versionAttr] = ['phantomjs@1.9.18', 'phantomjssmith@0.7.5', 'hosts-group@0.1.1', 'gulp-json-format@1.0.0', 'gulp-ysprite', 'gulp-ystamp'];
+localPlugins[versionAttr] = ['phantomjs@1.9.18', 'phantomjssmith@0.7.5', 'hosts-group@0.1.1', 'gulp-json-format@1.0.0', 'gulp-ysprite', 'gulp-ystamp', 'gulp-download', 'gulp-unzip', 'gulp-copy'];
 
 // 命令设置
 program
