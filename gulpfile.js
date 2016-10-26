@@ -61,20 +61,28 @@ Tools.deepClone = Tools.prototype.deepClone = function(obj){
 
 //gulp.dest上传到服务器方法重写
 Tools.dest = Tools.prototype.dest = function(dest){
-    if((typeof dest=='object')&&dest.way=='SERVER_WAY_SSH'){
-        var gulpSSH = new GulpSSH({
-          ignoreErrors: false,
-          sshConfig: dest.ssh
-        });
-        return gulpSSH.dest(dest.ssh.path);
-    }else if((typeof dest=='object')&&(dest.way=='SERVER_WAY_DIR'||!dest.way)){
-        return gulp.dest(dest.dir);
-    }else if(typeof dest == 'string'){
-        return gulp.dest(dest);
-    }else{
-        console.log('\n----------------Error-------------------------');
-        console.log('Error: Your config.server.way is wrong, please check it again!\n');
+    try{
+        if((typeof dest=='object')&&dest.way=='SERVER_WAY_SSH'){
+            var gulpSSH = new GulpSSH({
+              ignoreErrors: false,
+              sshConfig: dest.ssh
+            });
+            return gulpSSH.dest(dest.ssh.path);
+        }else if((typeof dest=='object')&&(dest.way=='SERVER_WAY_DIR'||!dest.way)){
+            return gulp.dest(dest.dir);
+        }else if((typeof dest=='string')&&!!dest){
+            return gulp.dest(dest);
+        }else{
+            console.log('\n----------------Error-------------------------');
+            console.log('Error: Your config.server.way is wrong, please check it again!\n');
+            process.send({action: 'debug', data: '出错提示：发布路径' + dest + '不正确，请检查是否正确配置。'});
+        }
+    }catch(e){
+        console.log(e.message);
+        process.send({action: 'debug', data: 'Error：' + e.message});
+        process.send({action: 'debug', data: '出错提示：发布路径遇到错误，请检查映射盘是否存在或者网络是否中断。'});
     }
+    
 };
 
 //广度文件夹遍历
@@ -432,11 +440,9 @@ var Common = {
             for(var i = 0, len = allFiles.length; i < len; i++){
                 var extraname = path.extname(path.basename(allFiles[i]));
                 if(extraname == '.css'){
-                    var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
-                    Common.cssFiles.push(relativefilePath);
+                    Common.cssFiles.push(allFiles[i]);
                 }else if(['.jpg','.png','.gif'].contains(extraname)){
-                    var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
-                    Common.imgFiles.push(relativefilePath);
+                    Common.imgFiles.push(allFiles[i]);
                 }else if(['.html','.htm'].contains(extraname)){
                     Common.htmlFiles.push(allFiles[i]);
                 }
@@ -1670,17 +1676,15 @@ UIClass.prototype.init = function(cb){
         var extraname = path.extname(path.basename(allFiles[i]));
         if(extraname == '.css'){
             this.cssBasePath = path.dirname(allFiles[i]);
-            var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
-            this.cssAbsolutePath = path.join(path.basename(config.root_mediastyle), path.dirname(allFiles[i]).split(path.basename(config.root_mediastyle))[1]);
-            this.cssFiles.push(relativefilePath);
+            this.cssAbsolutePath = path.join(this.server.site, path.normalize(path.dirname(allFiles[i])).replace(path.normalize(config.root_mediastyle), '')).replace(/\\/g,'/');
+            this.cssFiles.push(allFiles[i]);
             //检查文件关联性
             if(this.argv.g){
                 this.cssFiles = [path.join(this.cssBasePath,'**/*.css'), '!'+path.join(this.cssBasePath,'**/*.import.css')];
                 this.guangLianArr.push(path.basename(allFiles[i]));
             }
         }else if(['.jpg','.png','.gif'].contains(extraname)){
-            var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
-            this.imgFiles.push(relativefilePath);
+            this.imgFiles.push(allFiles[i]);
         }else if(['.html','.htm'].contains(extraname)){
             this.htmlFiles.push(allFiles[i]);
         }else {
@@ -1721,12 +1725,16 @@ UIClass.prototype.init = function(cb){
 // UI上传文件（普通格式）
 UIClass.prototype.uploadFile = function(cb){
     var that = this;
+    var fileList = [];
     gulp.src(that.otherFiles, {base: path.normalize(config.root_mediastyle)})
-        .pipe(next(function(fileList){
+        .pipe(next(function(fileListArr){
+            fileList = fileListArr;
+        }))
+        .pipe(Tools.dest(that.server))
+        .pipe(next(function(){
             process.send({action: 'sync', arsFileArr: fileList});
             cb && typeof cb == 'function' ? cb() : '';
-        }))
-        .pipe(Tools.dest(that.server));
+        }));
 }
 
 // UI上传样式
@@ -1763,9 +1771,7 @@ UIClass.prototype.uploadCss = function(cb){
             callback: function(stream){
                 var site = '';
                 if(that.argv.a){
-                  site = path.join(config.servers[that.serverId].site, that.cssAbsolutePath).replace(/(^http(s)?:\/)\S+/, function($0, $1){
-                    return $0.replace($1, $1 + '/');
-                  });
+                  site = that.cssAbsolutePath;
                 }
                 stream.pipe(yStamp({
                     stamp: stamp,
@@ -1777,12 +1783,17 @@ UIClass.prototype.uploadCss = function(cb){
                             that.imgFiles = that.imgFiles.concat(backgroundImgs).unique();
                             process.send({action: 'sync', arsFileArr: that.imgFiles});
                         }
+                        var fileList = [];
                         stream.pipe(minifyCSS({
                             advanced: false,//类型：Boolean 默认：true [是否开启高级优化（合并选择器等）]
                             compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                             keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
                         }))
-                        .pipe(next(function(fileList){
+                        .pipe(next(function(fileListArr){
+                            fileList = fileListArr;
+                        }))
+                        .pipe(Tools.dest(that.server))
+                        .pipe(next(function(){
                             // 提单文件（其中包含了如果是检查关联性功能，这里是要在界面增加的提单文件）
                             process.send({action: 'sync', arsFileArr: fileList});
                             // 如果没有同步资源，有可能会因为sprite产生图片
@@ -1799,8 +1810,7 @@ UIClass.prototype.uploadCss = function(cb){
                             } 
                             console.log('样式上传到完毕...');
                             cb && typeof cb == 'function' ? cb() : '';
-                        }))
-                        .pipe(Tools.dest(that.server));
+                        }));
                     }
                 }));
             }
@@ -1825,9 +1835,14 @@ UIClass.prototype.uploadImg = function(cb){
         if(that.argv.p){
             imageminParamObj['use'] = [pngquant()];
         }
+        var fileList = [];
         gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
-            .pipe(next(function(fileList){
+            .pipe(next(function(fileListArr){
+                fileList = fileListArr;
+            }))
+            .pipe(Tools.dest(config.servers[that.serverId]))
+            .pipe(next(function(){
                 if(++key < that.imgFiles.length){
                     upImg(key);
                 }else {
@@ -1835,8 +1850,7 @@ UIClass.prototype.uploadImg = function(cb){
                     console.log('图片上传到完毕...');
                     cb && typeof cb == 'function' ? cb() : '';
                 }
-            }))
-            .pipe(Tools.dest(config.servers[that.serverId]));
+            }));
     }
     upImg(0);
 }
