@@ -1,9 +1,9 @@
 ﻿/*============================================================
       @作者：yumyfeng
       @说明：Yummy 新一代跨平台的前端构建工具
-      @版本：V2.0.0
+      @版本：V2.1.0
       @最后编辑：$Author:: yumyfeng       $
-                 $Date:: 2015-12-24 18:06:05#$
+                 $Date:: 2016-10-24 18:06:05#$
 =============================================================*/
 console.log('\nPlease waiting...\n');
 var gulp = require('gulp');
@@ -27,13 +27,55 @@ var next = require('gulp-next');
 var iconv = require('iconv-lite');
 var gulpif = require('gulp-if');
 var jsonFormat = require('gulp-json-format');
-var hosts = require('hosts-group');
 var download = require("gulp-download");
 var unzip = require("gulp-unzip");
 var gulpCopy = require('gulp-copy');
+var yhtml = require('gulp-yhtml');
+var prettify = require('gulp-html-prettify');
+var grepContents = require('gulp-grep-contents');
+// var autoprefixer = require('gulp-autoprefixer');
+var stripCssComments = require('gulp-strip-css-comments');
+var GulpSSH = require('gulp-ssh')
+
 
 //工具扩展类
 function Tools(){}
+
+//深拷贝对象和数组
+Tools.deepClone = Tools.prototype.deepClone = function(obj){
+    var str, newobj = obj.constructor === Array ? [] : {};
+    if(typeof obj !== 'object'){
+        return;
+    } else if(JSON){
+        str = JSON.stringify(obj), //系列化对象
+        newobj = JSON.parse(str); //还原
+    } else {
+        for(var i in obj){
+            newobj[i] = typeof obj[i] === 'object' ? 
+            cloneObj(obj[i]) : obj[i]; 
+        }
+    }
+    return newobj;
+};
+
+
+//gulp.dest上传到服务器方法重写
+Tools.dest = Tools.prototype.dest = function(dest){
+    if((typeof dest=='object')&&dest.way=='SERVER_WAY_SSH'){
+        var gulpSSH = new GulpSSH({
+          ignoreErrors: false,
+          sshConfig: dest.ssh
+        });
+        return gulpSSH.dest(dest.ssh.path);
+    }else if((typeof dest=='object')&&(dest.way=='SERVER_WAY_DIR'||!dest.way)){
+        return gulp.dest(dest.dir);
+    }else if(typeof dest == 'string'){
+        return gulp.dest(dest);
+    }else{
+        console.log('\n----------------Error-------------------------');
+        console.log('Error: Your config.server.way is wrong, please check it again!\n');
+    }
+};
 
 //广度文件夹遍历
 Tools.walk = Tools.prototype.walk = function(walkPath, format, callback){
@@ -72,6 +114,7 @@ Tools.mkDirFileSync = Tools.prototype.mkDirFileSync = function(walkPath, fileCon
     }
     mdf(walkPath, fileContent, 1)
 }
+
 
 //判断一个值是否在数组中
 Array.prototype.contains = function(search){
@@ -149,6 +192,7 @@ var config = {
     root_mediastyle: '',
     base_ars: 'ars/',
     servers: null,
+    localServerCache: {},
     tools: {
         minifyCssIn: 'tools/minifyCss.in/',
         minifyCssOut: 'tools/minifyCss.out/',
@@ -170,7 +214,9 @@ var config = {
         current: 'current',
         open: 'open',
         hosts: 'hosts',
-        update: 'update'
+        update: 'update',
+        localServer: 'localserver',
+        htmlInclude: 'htmlinclude'
     },
     template: {},
     //命令任务对应表
@@ -179,8 +225,9 @@ var config = {
     baseFilePath: 'config/base.json',
     jobs: null,
     baseJson: null,
-    projection: null,
+    localServer: null,
     init:  function(){
+        this.initExecPath();
         Tools.mkDirFileSync(config.baseFilePath, '{}');
         Tools.mkDirFileSync(config.jobFilePath, '{}');
         var flagWrite = false;
@@ -251,17 +298,15 @@ var config = {
                 }
             }
         }
-        // 映射关系
-        if(!baseJson.projection){
-            baseJson.projection = [
+        // 本地服务器
+        if(!baseJson.localServer){
+            baseJson.localServer = [
                 {
-                    "name": "normal",
-                    "rules": [
-                        {
-                            "domain": "imgcache.gtimg.cn",
-                            "localpath": "E:/SvnProject"
-                        }
-                    ]
+                    state: false,
+                    name: "默认本地服务器名字",
+                    dir: "E:/SvnProject",
+                    host: "127.0.0.1",
+                    port: "10086"
                 }
             ];
             flagWrite = true;
@@ -269,7 +314,7 @@ var config = {
         // 补充新版本的定义json结构
         if(flagWrite){
             fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
-            gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.baseFilePath)));
+            gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(Tools.dest(path.dirname(config.baseFilePath)));
         }
         // 初始化服务器设置
         this.initServer();
@@ -277,11 +322,22 @@ var config = {
         this.initTemplate('template');
         // 自定义功能模块
         this.initExtend('extend');
+        // 本地服务器初始化
+        // this.initLocalServer();
+    },
+    // 让gulpfile文件由nodejs环境执行
+    initExecPath: function(){
+        var execPath = 'execPath.txt';
+        if (!fs.existsSync(execPath)) {
+            Tools.mkDirFileSync(execPath, process.execPath);
+        }
+        process.execPath = fs.readFileSync(execPath, {encoding: 'utf8'});
     },
     // 初始化服务器设置
     initServer: function(){
         for(var i = 0, len = this.servers.length; i < len; i++){
             var server = this.servers[i];
+            server.serverId = i;
             // 动态添加服务器任务
             gulp.task(server.cmd, uploadServer(argv, server));
             config.taskFun[server.cmd] = uploadServer;
@@ -289,6 +345,9 @@ var config = {
     },
     // 初始化模板
     initTemplate: function(walkPath){
+        if (!fs.existsSync(walkPath)) {
+            fs.mkdirSync(walkPath);
+        }
        var dirList = fs.readdirSync(walkPath);
        var fileList = [];
        var tpls = [];
@@ -324,6 +383,18 @@ var config = {
             }
         });
     },
+    // 本地服务器
+    initLocalServer: function(){
+        var server;
+        var localServer = require('./lib/localserver/index.js');
+        for(var i = 0, len = this.baseJson.localServer.length; i < len; i++){
+            var ls = this.baseJson.localServer[i];
+            if(ls.state && !config.localServerCache[i]){
+                server = localServer.createServer(ls['dir'], ls['host'], ls['port']);
+                config.localServerCache[i] = server;
+            }
+        }
+    },
     // 设置当前工作目录
     setCurrentJob: function(){
         var json = this.jobs;
@@ -344,12 +415,17 @@ config.init();
 
 //公用类
 var Common = {
+    server: null,
     cssFiles: [],
     imgFiles: [],
     htmlFiles: [],
-    init: function(argv){
+    defaultCssFiles: [],
+    defaultImgFiles: [],
+    defaultHtmlFiles: [],
+    init: function(argv, server){
         //如果是指定文件上传，只会上传指定的文件，并且文件不受项目约束 
         //非指定文件上传，会将项目下需要的文件全部上传
+        Common.server = server;
         var allFiles = [];
         if(argv.f && typeof argv.f == 'string'){
             var allFiles = argv.f.split(',');
@@ -365,6 +441,10 @@ var Common = {
                     Common.htmlFiles.push(allFiles[i]);
                 }
             }
+        }else{
+            Common.defaultCssFiles = [config.dir_local_css + '/**/*.css', '!' + config.dir_local_css + '/**/*.import.css'];
+            Common.defaultImgFiles = [config.dir_local_css + '/**/*.png', config.dir_local_css + '/**/*.jpg', config.dir_local_css + '/**/*.gif', '!' + config.dir_local_css + '/slice/**/*', '!' + config.dir_local_css + '/base64/**/*'];
+            Common.defaultHtmlFiles = [config.dir_local_html+'/**/*.html'];
         }
     },
     uploadStyle: function(argv, server, cb){
@@ -378,34 +458,47 @@ var Common = {
     },
     uploadCss: function(argv, server, arr, cb){
         var dir = server.dir;
-        var cssSrc = [config.dir_local_css + '/**/*.css', '!' + config.dir_local_css + '/**/*.import.css'];
+        var cssSrc = Common.defaultCssFiles;
+        var tempDirLocalCss = '';
         //指定文件上传
-        if(argv.f && typeof argv.f == 'string'){
+        if(argv.f && typeof argv.f == 'string' && !argv.g){
             if(arr && arr.length){
                 cssSrc = arr;
+                tempDirLocalCss = path.dirname(arr[0]);
             }else {
                 cb && typeof cb == 'function' ? cb() : '';
                 return;
             }
         }
+        if(argv.g){
+            var glStr = '@import\\s+(?:url\\()?(.+(?=[\'\"\\)](?:'+arr.join('|')+')))(?:\\))?.*';
+            var regGl = new RegExp(glStr, 'gi');
+        }
         var changedDir = dir + config.dir_local_css.replace(config.root_mediastyle, '');
-        gulp.src(cssSrc, {base: config.root_mediastyle})
-            .pipe(gulpif(argv.u && !argv.f , changed(changedDir)))
+        gulp.src(cssSrc, {base: path.normalize(config.root_mediastyle)})
+            .pipe(gulpif(!!argv.g, grepContents(regGl)))
+            .pipe(gulpif(!!argv.c, rename({'suffix': argv.c}))) //重命名样式文件
+            .pipe(gulpif(!!argv.u && !argv.f , changed(changedDir)))
+            .pipe(stripCssComments())
             .pipe(cssimport({extensions: ["!less", "!sass"]}))
+            // .pipe(autoprefixer({
+            //     browsers: ['ie > 7', 'ios > 6', 'Firefox <= 20', '> 5%'],
+            //     cascade: false
+            // }))
             .pipe(tobase64({
                     maxsize: 8,        
                     ignore: /(?!.*\bbase64\b)^.*$/g
                 }
             ))
             .pipe(ySprite({
-                slice: config.dir_local_css,
-                sprite: config.dir_local_css + '/sprite',
+                slice: tempDirLocalCss ||config.dir_local_css,
+                sprite: (tempDirLocalCss||config.dir_local_css) + '/sprite',
                 engine: require('phantomjssmith'),
                 callback: function(stream){
                     var site = '';
                     if(argv.a){
                       var cssAbsolutePath = path.join(path.basename(config.root_mediastyle), config.dir_local_css.split(path.basename(config.root_mediastyle))[1]);
-                      site = path.join(config.servers[that.serverId].site, cssAbsolutePath).replace(/(^http(s)?:\/)\S+/, function($0, $1){
+                      site = path.join(config.servers[server.serverId].site, cssAbsolutePath).replace(/(^http(s)?:\/)\S+/, function($0, $1){
                         return $0.replace($1, $1 + '/');
                       });
                     }
@@ -426,7 +519,7 @@ var Common = {
                                 compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                                 keepBreaks: true//类型：Boolean 默认：false [是否保留换行]
                             }))
-                            .pipe(gulp.dest(dir)).pipe(next(function(){
+                            .pipe(Tools.dest(server)).pipe(next(function(){
                                 console.log('样式上传到' + server.name + '完毕...');
                                 cb && typeof cb == 'function' ? cb() : '';
                             }));
@@ -437,7 +530,7 @@ var Common = {
     },
     uploadImg: function(argv, server, arr, cb){
         var dir = server.dir;
-        var imgSrc = [config.dir_local_css + '/**/*.png', config.dir_local_css + '/**/*.jpg', config.dir_local_css + '/**/*.gif', '!' + config.dir_local_css + '/slice/**/*', '!' + config.dir_local_css + '/base64/**/*'];
+        var imgSrc = Common.defaultImgFiles;
         //指定文件上传
         if(argv.f && typeof argv.f == 'string'){
             if(arr && arr.length){
@@ -459,10 +552,10 @@ var Common = {
             if(argv.p){
                 imageminParamObj['use'] = [pngquant()];
             }
-            gulp.src(imgSrc[key], {base: config.root_mediastyle})
+            gulp.src(imgSrc[key], {base: path.normalize(config.root_mediastyle)})
                 .pipe(gulpif(argv.u && !argv.f, changed(changedDir)))
                 .pipe(imagemin(imageminParamObj))
-                .pipe(gulp.dest(dir))
+                .pipe(Tools.dest(server))
                 .pipe(next(function(){
                     if(++key < imgSrc.length){
                         uploadImg(key);
@@ -477,7 +570,7 @@ var Common = {
     //上传html
     uploadHtml: function(argv, server, cb){
         var dir = server.dir;
-        var htmlSrc = [config.dir_local_html+'/**/*.html'];
+        var htmlSrc = Common.defaultHtmlFiles;
         //指定文件上传
         if(argv.f && typeof argv.f == 'string'){
             if(Common.htmlFiles.length){
@@ -495,11 +588,11 @@ var Common = {
             }))
             .pipe(gulpif(argv.u && !argv.f, changed(dir)))
             .pipe(tap(function(file){
-                var reg = /\bhttp:\/\/imgcache.gtimg.cn\/mediastyle\//g;
+                var reg = new RegExp('^' + config.servers[that.serverId].site.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'));
                 var content = file.contents.toString().replace(reg, '');
                 file.contents = new Buffer(content);
             }))
-            .pipe(gulp.dest(dir))
+            .pipe(Tools.dest(server))
             .pipe(next(function(){
                 //打开1.html页面
                 var projDir = path.basename(dir);
@@ -543,14 +636,14 @@ var Common = {
                 var content = file.contents.toString().replace(replaceLink[0], replaceLink[1] + cssFolder + '/index.css" />');
                 file.contents = new Buffer(content);
             }))
-            .pipe(gulp.dest(htmlDirPath))
+            .pipe(Tools.dest(htmlDirPath))
             .pipe(next(function(){
                 //打开窗口
                 Common.openFolder(htmlDirPath);
                 console.log('创建' + name + 'html成功...');
                 //同步模板css到文件夹
                 gulp.src(['!template/' + templateName + '/*.html', '!template/' + templateName + '/rule.js', 'template/' + templateName + '/**/*'])
-                    .pipe(gulp.dest(cssDirPath))
+                    .pipe(Tools.dest(cssDirPath))
                     .pipe(next(function(){
                         //打开窗口
                         Common.openFolder(cssDirPath);
@@ -631,7 +724,7 @@ function taskSetConfig(argv, taskCallback){
         }
         var attr = arr[0].trim().split('.');
         // 禁止直接使用命令修改模板配置
-        if(attr == 'template'){
+        if(attr[0] == 'template'){
             console.log('模板配置只能在对应的rule.js里修改哦！');
             if(!!taskCallback) taskCallback();
             return;
@@ -640,13 +733,19 @@ function taskSetConfig(argv, taskCallback){
         for(var i = 0; i < attr.length; i++){
             str += '["' + attr[i] + '"]';
         }
-        str = 'config.baseJson' + str + '="' + arr[1] + '"';
-        console.log('修改配置--->'+str);
-        eval(str);
-        //同步修改config对象中的属性
-        eval(str.replace('config.baseJson', 'config'));
-        fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
-        gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.baseFilePath)));
+        try{
+            eval(arr[1]);
+            str = 'config.baseJson'+str+'='+JSON.stringify(eval(arr[1]));
+            console.log(str);
+            eval(str);
+            //同步修改config对象中的属性
+            eval(str.replace('config.baseJson','config'));
+            console.log('修改配置--->'+str);
+            fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
+            gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(Tools.dest(path.dirname(config.baseFilePath)));
+        }catch(e){
+            console.log('>>>>>eval error tips: '+e.message);
+        }
         if(!!taskCallback) taskCallback();
     }
 }
@@ -663,6 +762,15 @@ function taskServer(argv, taskCallback){
                     if(arr2[0] == 'format'){
                         arr2[1] = arr2[1].split('&');
                     }
+                    if(arr2[0] == 'ssh'){
+                        var tarr = arr2[1].split('&');
+                        var tobj = {};
+                        for(var j = 0;j < tarr.length;j++){
+                            var tarr2 = tarr[j].split(':');
+                            tobj[tarr2[0]] = tarr2[1];
+                        }
+                        arr2[1] = tobj;
+                    }
                     obj[arr2[0]] = arr2[1];
                 }
                 // config.servers与config.baseJson.servers指向相同对象
@@ -676,6 +784,15 @@ function taskServer(argv, taskCallback){
                     if(arr2[0] == 'format'){
                         arr2[1] = arr2[1].split('&');
                     }
+                    if(arr2[0] == 'ssh'){
+                        var tarr = arr2[1].split('&');
+                        var tobj = {};
+                        for(var j = 0;j < tarr.length;j++){
+                            var tarr2 = tarr[j].split(':');
+                            tobj[tarr2[0]] = tarr2[1];
+                        }
+                        arr2[1] = tobj;
+                    }
                     obj[arr2[0]] = arr2[1];
                 }
                 break;
@@ -685,7 +802,7 @@ function taskServer(argv, taskCallback){
                 break;
         }
         fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
-        gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.baseFilePath)));
+        gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(Tools.dest(path.dirname(config.baseFilePath)));
         if(!!taskCallback) taskCallback();
     }
 }
@@ -711,7 +828,7 @@ function taskAdd(argv, taskCallback){
         var json = config.jobs;
         json[job[0]] = job[1] + "," + job[2];
         fs.writeFileSync(config.jobFilePath, JSON.stringify(json));
-        gulp.src(config.jobFilePath).pipe(jsonFormat(4)).pipe(gulp.dest(path.dirname(config.jobFilePath)));
+        gulp.src(config.jobFilePath).pipe(jsonFormat(4)).pipe(Tools.dest(path.dirname(config.jobFilePath)));
         console.log('已成功添加一个工作记录：' + job[0] + ' <==> ' + job[1] + ' ' + job[2]);
         cbDataArr.push('已成功添加一个工作记录：' + job[0] + ' <==> ' + job[1] + ' ' + job[2]);
         if(!!taskCallback) taskCallback(cbDataArr);
@@ -800,10 +917,46 @@ function taskCurrent(argv, taskCallback){
     }
 }
 
+// HTML模板化生成
+function taskHtmlInclude(argv, taskCallback){
+    return function(){
+        var htmlSrc = [];
+        var base = {};
+        var dir = '';
+        var cbDataArr = [];
+        //指定文件上传
+        if(argv.f && typeof argv.f == 'string'){
+           htmlSrc = argv.f.split(',');
+        }else {
+            config.setCurrentJob();
+            htmlSrc = [config.dir_local_html+'/**/*.html', '!'+config.dir_local_html+'/public/**/*.html', '!'+config.dir_local_html+'/**/*.import.html'];
+            base = {base: path.normalize(config.dir_local_html)};
+        }
+        if(!htmlSrc.length){
+            if(!!taskCallback) taskCallback(cbDataArr);
+            return;
+        }
+        gulp.src(htmlSrc)
+            .pipe(tap(function(file){
+                dir = path.join(path.dirname(file.path), 'public');
+                gulp.src(file.path, base)
+                    .pipe(yhtml({deepConcat: true}))
+                    .pipe(prettify({indent_char: ' ', indent_size: 4}))
+                    .pipe(Tools.dest(dir));
+            }))
+            .pipe(next(function(){
+                console.log('模板化生成完毕');
+                cbDataArr.push('模板化生成完毕');
+               if(!!taskCallback) taskCallback(cbDataArr);
+            }));
+    }
+}
+
 // hosts管理
 // gulp hosts -d groupname,127.0.0.1,imgcache.gtimg.cn -f groupname,0 -s groupname,0
 function taskHosts(argv, taskCallback){
     return function(){
+        var hosts = require('hosts-group');
         for(var key in argv){
             switch(key){
                 case 'a':
@@ -863,12 +1016,94 @@ function taskHosts(argv, taskCallback){
     }
 }
 
-// 规则映射管理 
-// gulp projection -a(-f,-d,-s) name,imgcache.gtimg.cn,"E:/SvnProject"
-function taskProjection(argv, taskCallback){
+// 本地服务器搭建 
+// gulp localserver -w add -n 本地服务器名字 -d "E:/SvnProject" -h 127.0.0.1 -p 10086
+// gulp localserver -w update -i 0 -n 本地服务器名字 -d "E:/SvnProject" -h 127.0.0.1 -p 10086
+// gulp localserver -w delete -i 0
+// gulp localserver -w run -i 0
+// gulp localserver -w stop -i 0
+function taskLocalServer(argv, taskCallback){
     return function(){
-        if(argv.a){
+        switch(argv.w){
+            case 'add':
+                if(!argv.n || !argv.d ||!argv.h ||!argv.p){
+                    console.log('本地服务器搭建失败，参数不完整');
+                    break;
+                }
+                var obj = {};
+                obj['state'] = !!argv.s;
+                obj['name'] = argv.n;
+                obj['dir'] = argv.d;
+                obj['host'] = argv.h;
+                obj['port'] = argv.p;
+                config.baseJson.localServer.push(obj);  
+                break;
+
+            case 'update':
+                if(argv.i == 'undefined'){
+                    console.log('本地服务器搭建失败，没有指定要更新的服务器');
+                    break;
+                }
+                var obj = config.baseJson.localServer[argv.i];
+                // 先停用原来的
+                if(obj['state'] && config.localServerCache[argv.i]){
+                    var localServer = require('./lib/localserver/index.js');
+                    localServer.closeServer(config.localServerCache[argv.i]);
+                }
+                if(argv.n) obj['name'] = argv.n;
+                if(argv.d) obj['dir'] = argv.d;
+                if(argv.h) obj['host'] = argv.h;
+                if(argv.p) obj['port'] = argv.p;
+                if(!!argv.s) {
+                    obj['state'] = argv.s;
+                    if(argv.s){
+                        var localServer = require('./lib/localserver/index.js');
+                        var server = localServer.createServer(obj['dir'], obj['host'], obj['port']);
+                    }
+                }
+                break;
+
+            case 'delete':
+                if(argv.i == 'undefined'){
+                    console.log('本地服务器搭建失败，没有指定要删除的服务器');
+                    break;
+                }
+                if(config.localServerCache[argv.i]){
+                    var localServer = require('./lib/localserver/index.js');
+                    localServer.closeServer(config.localServerCache[argv.i]);
+                }
+                config.baseJson.localServer.splice(argv.i, 1);
+                break;
+
+            case 'run':
+                if(argv.a){
+                    config.initLocalServer();
+                    break;
+                }
+                if(argv.i == 'undefined'){
+                    console.log('启动本地服务器失败，没有指定要启动的服务器');
+                    break;
+                }
+                var obj = config.baseJson.localServer[argv.i];
+                obj['state'] = true;
+                var localServer = require('./lib/localserver/index.js');
+                var server = localServer.createServer(obj['dir'], obj['host'], obj['port']);
+                config.localServerCache[argv.i] = server;
+                break;
+
+            case 'stop':
+                if(argv.i == 'undefined'){
+                    console.log('暂停本地服务器失败，没有指定要暂s停的服务器');
+                    break;
+                }
+                var obj = config.baseJson.localServer[argv.i];
+                obj['state'] = false;
+                var localServer = require('./lib/localserver/index.js');
+                localServer.closeServer(config.localServerCache[argv.i]);
+                break;
         }
+        fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
+        gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(Tools.dest(path.join(__dirname,path.dirname(config.baseFilePath))));
         if(!!taskCallback) taskCallback();
     }
 }
@@ -897,7 +1132,7 @@ function taskMinifyImg(argv, taskCallback){
         }
         gulp.src(srcArr)
             .pipe(imagemin(imageminParamObj))
-            .pipe(gulp.dest(output))
+            .pipe(Tools.dest(output))
             .pipe(next(function(){
                 console.log('图片压缩成功...');
                 if(!!taskCallback) taskCallback(['图片压缩成功...']);
@@ -918,7 +1153,12 @@ function taskMinifyCss(argv, taskCallback){
         }
         gulp.src(srcArr)
             .pipe(rename({'suffix': '.min'}))
+            .pipe(stripCssComments())
             .pipe(cssimport({extensions: ["!less", "!sass"]}))
+            // .pipe(autoprefixer({
+            //     browsers: ['ie > 7', 'ios > 6', 'Firefox <= 20', '> 5%'],
+            //     cascade: false
+            // }))
             .pipe(tobase64({
                     maxsize: 8,        
                     ignore: /(?!.*\bbase64\b)^.*$/g
@@ -929,7 +1169,7 @@ function taskMinifyCss(argv, taskCallback){
                 compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                 keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
             }))
-            .pipe(gulp.dest(output))
+            .pipe(Tools.dest(output))
             .pipe(next(function(){
                 console.log('CSS压缩成功...');
                 if(!!taskCallback) taskCallback(['CSS压缩成功...']);
@@ -990,9 +1230,9 @@ function taskSprite(argv, taskCallback){
                             cbDataArr.push('正在合并'+sprite.name+'...');
                         }
                     }));
-                spriteData.img.pipe(gulp.dest(output))
+                spriteData.img.pipe(Tools.dest(output))
                     .pipe(next(function(){
-                        spriteData.css.pipe(gulp.dest(output))
+                        spriteData.css.pipe(Tools.dest(output))
                             .pipe(next(function(){
                                 if(key == imgDirArr.length - 1){
                                     if(!!taskCallback) taskCallback(cbDataArr);
@@ -1007,54 +1247,64 @@ function taskSprite(argv, taskCallback){
 // 上传文件到服务器
 function uploadServer(argv, server, taskCallback){
     return function(){
-        config.setCurrentJob();
-        Common.init(argv);
+        if(!argv.f) config.setCurrentJob();
+        Common.init(argv, server);
         // 服务器指定创建一个目录文件夹
         if(argv.d){
-            dir += argv.d + '/';
+            var dir = server.dir;
+            server.dir += argv.d + '/';
         }
         // 上传相关文件到服务器
         Common.uploadStyle(argv, server, function(){
             if(argv.h){
                 //上传html
                 Common.uploadHtml(argv, server, function(){
+                    server.dir = dir;
                     if(!!taskCallback) taskCallback(['上传相关文件到服务器任务完成...']);
                 });
             }else {
+                server.dir = dir;
                 if(!!taskCallback) taskCallback(['上传相关文件到服务器任务完成...']);
             }
+
+            // 生成提单
+            if (!fs.existsSync(config.base_ars)) {
+                fs.mkdirSync(config.base_ars);
+            }
+            console.log('\n*****生成ars提单列表*****\n');
+            var fileList = [];
+            var fileUrl = [];
+            var arsTxt = path.basename(config.jobs._current_.split(',').pop());
+            var arsFile = config.base_ars + arsTxt + '.txt';
+            var arsArr = Common.cssFiles.concat(Common.imgFiles);
+            if(!arsArr.length){
+                arsArr = [config.dir_local_css + '/**/*.+(jpg|png|css)', '!' + config.dir_local_css + '/**/*.import.*', '!' + config.dir_local_css + '/extra/**/*', '!' + config.dir_local_css + '/slice/**/*', '!' +  config.dir_local_css + '/base64/**/*'];
+            }
+            gulp.src(arsArr)
+                .pipe(gulpif(!!argv.c, rename({'suffix': argv.c})))
+                .pipe(tap(function(file){
+                    var mediastyle = path.basename(config.root_mediastyle);
+                    var dirItem = path.normalize(mediastyle + file.path.split(mediastyle)[1]).replace(/\\/g, '/');
+                    console.log(path.join(Common.server.ars, dirItem).replace(/\\/g,'/'));
+                    fileList.push(path.join(Common.server.ars, dirItem).replace(/\\/g,'/'));
+                    fileUrl.push(path.join(Common.server.site, dirItem).replace(/\\/g,'/'));
+                })).pipe(next(function(){
+                    if(!fileList.length){
+                        console.log('温馨提示：找不到要提单的原文件，请检查文件是否存在！');
+                        if(!!taskCallback) taskCallback();
+                        return;
+                    }
+                    fs.writeFileSync(arsFile, '\r\n\r\n提单文件列表: \r\n' + fileList.join('\r\n') + '\r\n\r\n文件路径: \r\n' + fileUrl.join('\r\n\r\n'));
+                    console.log('\n提单文件列表' + arsTxt + '生成成功...');
+                    //打开提单文件
+                    if(argv.o){
+                        Common.openFolder(arsFile);
+                    }
+                    // console.log('\narsFile-->'+arsFile);
+                    if(!!taskCallback) taskCallback();
+                }));
+
         });
-    }
-}
-
-//生成ars提单列表
-function taskArs(argv, taskCallback){
-    return function(){
-        if (!fs.existsSync(config.base_ars)) {
-            fs.mkdirSync(config.base_ars);
-        }
-        console.log('\n*****生成ars提单列表任务*****\n');
-        config.setCurrentJob();
-        var fileList = [];
-        var fileUrl = [];
-        var arsTxt = path.basename(config.jobs._current_.split(',').pop());
-        var arsFile = config.base_ars + arsTxt + '.txt';
-
-        gulp.src([config.dir_local_css + '/**/*.+(jpg|png|css)', '!' + config.dir_local_css + '/**/*.import.*', '!' + config.dir_local_css + '/extra/**/*', '!' + config.dir_local_css + '/slice/**/*', '!' +  config.dir_local_css + '/base64/**/*'])
-            .pipe(tap(function(file){
-                var mediastyle = path.basename(config.root_mediastyle);
-                var dirItem = path.normalize(mediastyle + file.path.split(mediastyle)[1]).replace(/\\/g, '/');  
-                console.log('/usr/local/imgcache/htdocs/' + dirItem);
-                fileList.push('/usr/local/imgcache/htdocs/' + dirItem);
-                fileUrl.push('http://imgcache.gtimg.cn/' + dirItem);
-            })).pipe(next(function(){
-                fs.writeFileSync(arsFile, '\r\n提单文件列表: \r\n' + fileList.join('\r\n') + '\r\n文件路径: \r\n' + fileUrl.join('\r\n'));
-                console.log('\n提单文件列表' + arsTxt + '生成成功...');
-                //打开提单文件
-                Common.openFolder(arsFile);
-                console.log('\narsFile-->'+arsFile);
-                if(!!taskCallback) taskCallback();
-            }));
     }
 }
 
@@ -1079,7 +1329,7 @@ function taskTemplate(argv, tpl, taskCallback){
 function taskOpen(argv, taskCallback){
     return function(){
         var th = config.dir_local_html;
-        var ts = config.dir_local_css;
+        var ts = config.f;
         if(argv.d){
             if(typeof argv.d != 'string'){
                 console.log('-d参数指定具体工作任务名字应该是字符串...');
@@ -1124,7 +1374,7 @@ function taskTest(argv, taskCallback){
                             max_age: '2592000'
                         },
                         callback: function(stream){
-                            stream.pipe(gulp.dest('test/result'))
+                            stream.pipe(Tools.dest('test/result'))
                                 .pipe(next(function(){
                                     console.log('测试运行成功...');
                                     if(!!taskCallback) taskCallback(['测试运行OK...']);
@@ -1140,10 +1390,27 @@ function taskTest(argv, taskCallback){
 function taskUpdate(argv, taskCallback){
     return function(){
         var cbDataArr = [];
-        var lastVersionCheck = childProcess.exec('npm view yummy-yummy version');
+        var netWrongTips = false;
+        var lastVersionCheck = childProcess.exec('npm view yummy-version');
         lastVersionCheck.stdout.on('data', function(data){
-            var data = data.replace(/\r\n|\n/g, '').replace(/\s+/g, '');
-            if(data <= JSON.parse(fs.readFileSync('./package.json', 'utf8')).version){
+            data = eval('(' + data + ')');
+            var version = data.version.replace(/\r\n|\n/g, '').replace(/\s+/g, '');
+            var features = data.features || [];
+            var hasNewVersion = (version > JSON.parse(fs.readFileSync('./package.json', 'utf8')).version);
+            //只是检测是否有新版本
+            if(argv.t){
+                if(hasNewVersion){
+                      console.log('检查到有新版本V' + version + '，需要升级可以到配置中手动更新！');
+                      cbDataArr.push('检查到有新版本' + version + '，需要升级可以到配置中手动更新！');
+                      if(!!taskCallback) taskCallback(cbDataArr, -1, features);  
+                  }else{
+                    console.log('当前已是最新版本');
+                    cbDataArr.push('当前已是最新版本');
+                    if(!!taskCallback) taskCallback(cbDataArr, 0);
+                  }
+                return;
+            }
+            if(!hasNewVersion){
                 console.log('当前已是最新版本');
                 cbDataArr.push('当前已是最新版本');
                 if(!!taskCallback) taskCallback(cbDataArr, 0);
@@ -1152,7 +1419,7 @@ function taskUpdate(argv, taskCallback){
             if(!!taskCallback) taskCallback(cbDataArr, 1);
             download('https://github.com/yumyfung/yummy/archive/master.zip')
                 .pipe(unzip())
-                .pipe(gulp.dest("downloads/"))
+                .pipe(Tools.dest("downloads/"))
                 .pipe(gulpCopy('./', {prefix: 2}))
                 .pipe(next(function(){
                     childProcess.exec('node ./bin/yummy.js update', function(err,stdout,stderr){
@@ -1170,11 +1437,14 @@ function taskUpdate(argv, taskCallback){
                 }));
         });
         lastVersionCheck.stderr.on('data', function(data){
-            console.log('Yummy tips: Please check your net,maybe it need proxy...');
-            console.log('Yummy tips: 请检查你的网络，可能需要代理...');
-            console.log('stderr: ' + data);
-            cbDataArr.push('stderr: ' + data);
-            if(!!taskCallback) taskCallback(cbDataArr, 0);
+            if(!netWrongTips){
+                netWrongTips = true;
+                console.log('Yummy tips: Please check your net,maybe it need proxy...');
+                console.log('Yummy tips: 连接你的网络出错，暂时检测不到是否有新版本...');
+                console.log('stderr: ' + data);
+                cbDataArr.push('连接你的网络出错，暂时检测不到是否有新版本...');
+                if(!!taskCallback) taskCallback(cbDataArr, 0);
+            }
         });
     }
 }
@@ -1200,12 +1470,12 @@ config.taskFun[config.task.jobs] = taskJobs;
 //查看当前工作记录
 gulp.task(config.task.current, taskCurrent(argv));
 config.taskFun[config.task.current] = taskCurrent;
+//HTML模板化生成
+gulp.task(config.task.htmlInclude, taskHtmlInclude(argv));
+config.taskFun[config.task.htmlInclude] = taskHtmlInclude;
 //hosts管理
 gulp.task(config.task.hosts, taskHosts(argv));
 config.taskFun[config.task.hosts] = taskHosts;
-//生成ars提单列表
-gulp.task(config.task.ars, taskArs(argv));
-config.taskFun[config.task.ars] = taskArs;
 //快速打开任务文件夹
 gulp.task(config.task.open, taskOpen(argv));
 config.taskFun[config.task.open] = taskOpen;
@@ -1218,6 +1488,9 @@ config.taskFun[config.task.minifyCss] = taskMinifyCss;
 //基础雪碧图功能
 gulp.task(config.task.sprite, taskSprite(argv));
 config.taskFun[config.task.sprite] = taskSprite;
+//本地服务器搭建 
+gulp.task(config.task.localServer, taskLocalServer(argv));
+config.taskFun[config.task.localServer] = taskLocalServer;
 //升级新版本
 gulp.task(config.task.update, taskUpdate(argv));
 config.taskFun[config.task.update] = taskUpdate;
@@ -1236,7 +1509,7 @@ gulp.task('default', function() {
         console.log('\n-------------------------------------------------------------------------------');
         console.log('\n童鞋，你可以在下面输入命令哟^_^\n');
         console.log('-------------------------------------------------------------------------------\n');
-        process.stdin.resume();
+        process.stdin.resume();//这句话是为了不让控制台退出
         process.stdin.setEncoding('binary');
         process.stdin.once('data', function (chunk) {
             chunk = chunk.replace(/\r\n/g, '').trim();
@@ -1297,7 +1570,7 @@ function gulpCommandSplit(str){
     checkArr.push(arr[0], arr[1]);
 
     // 获取argv参数对象
-    var childStrReg = /("|')(.+)\1/;
+    var childStrReg = /^("|')([^"']+)\1$/;
     (str + ' ').replace(reg, function($0, $1, $2, $3){
         argv[$2] = $3.replace(childStrReg, function($0, $1, $2){return $2;}) || true;
         checkArr.push($1, $3);
@@ -1384,10 +1657,14 @@ function UIClass(argv) {
     this.otherFiles = [];
     this.cssBasePath = '';
     this.cssAbsolutePath = '';
+    this.guangLianArr = [];
+    this.server = {};
 }
 
 // UI初始化
 UIClass.prototype.init = function(cb){
+    this.server = Tools.deepClone(config.servers[this.serverId]);
+    this.server.dir = this.argv.d;
     var allFiles = this.argv.f.split(',');
     for(var i = 0, len = allFiles.length; i < len; i++){
         var extraname = path.extname(path.basename(allFiles[i]));
@@ -1396,6 +1673,11 @@ UIClass.prototype.init = function(cb){
             var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
             this.cssAbsolutePath = path.join(path.basename(config.root_mediastyle), path.dirname(allFiles[i]).split(path.basename(config.root_mediastyle))[1]);
             this.cssFiles.push(relativefilePath);
+            //检查文件关联性
+            if(this.argv.g){
+                this.cssFiles = [path.join(this.cssBasePath,'**/*.css'), '!'+path.join(this.cssBasePath,'**/*.import.css')];
+                this.guangLianArr.push(path.basename(allFiles[i]));
+            }
         }else if(['.jpg','.png','.gif'].contains(extraname)){
             var relativefilePath = path.join(config.root_mediastyle, allFiles[i].split(path.basename(config.root_mediastyle))[1]);
             this.imgFiles.push(relativefilePath);
@@ -1439,11 +1721,12 @@ UIClass.prototype.init = function(cb){
 // UI上传文件（普通格式）
 UIClass.prototype.uploadFile = function(cb){
     var that = this;
-    gulp.src(that.otherFiles, {base: config.root_mediastyle})
-        .pipe(gulp.dest(that.dir))
-        .pipe(next(function(){
+    gulp.src(that.otherFiles, {base: path.normalize(config.root_mediastyle)})
+        .pipe(next(function(fileList){
+            process.send({action: 'sync', arsFileArr: fileList});
             cb && typeof cb == 'function' ? cb() : '';
-        }));
+        }))
+        .pipe(Tools.dest(that.server));
 }
 
 // UI上传样式
@@ -1455,8 +1738,19 @@ UIClass.prototype.uploadCss = function(cb){
     if(this.argv.m){
         stamp.md5 = true;
     }
-    gulp.src(that.cssFiles, {base: config.root_mediastyle})
+    if(that.argv.g){
+        var glStr = '@import\\s+(?:url\\()?(.+(?=[\'\"\\)](?:'+that.guangLianArr.join('|')+')))(?:\\))?.*';
+        var regGl = new RegExp(glStr, 'gi');
+    }
+    gulp.src(that.cssFiles, {base: path.normalize(config.root_mediastyle)})
+        .pipe(gulpif(!!that.argv.g, grepContents(regGl)))
+        .pipe(gulpif(!!that.argv.c, rename({'suffix': that.argv.c})))
+        .pipe(stripCssComments())
         .pipe(cssimport({extensions: ["!less", "!sass"]}))
+        // .pipe(autoprefixer({
+        //     browsers: ['ie > 7', 'ios > 6', 'Firefox <= 20', '> 5%'],
+        //     cascade: false
+        // }))
         .pipe(tobase64({
                 maxsize: 8,        
                 ignore: /(?!.*\bbase64\b)^.*$/g
@@ -1481,14 +1775,16 @@ UIClass.prototype.uploadCss = function(cb){
                         var isNeedToUploadImg = !!that.imgFiles.length;
                         if(that.argv.r){
                             that.imgFiles = that.imgFiles.concat(backgroundImgs).unique();
-                            process.send({action: 'sync', imgs: that.imgFiles});
+                            process.send({action: 'sync', arsFileArr: that.imgFiles});
                         }
                         stream.pipe(minifyCSS({
                             advanced: false,//类型：Boolean 默认：true [是否开启高级优化（合并选择器等）]
                             compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                             keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
                         }))
-                        .pipe(gulp.dest(that.dir)).pipe(next(function(){
+                        .pipe(next(function(fileList){
+                            // 提单文件（其中包含了如果是检查关联性功能，这里是要在界面增加的提单文件）
+                            process.send({action: 'sync', arsFileArr: fileList});
                             // 如果没有同步资源，有可能会因为sprite产生图片
                             if(!that.argv.r){
                                 that.imgFiles.push(that.cssBasePath + '/sprite/*');
@@ -1503,7 +1799,8 @@ UIClass.prototype.uploadCss = function(cb){
                             } 
                             console.log('样式上传到完毕...');
                             cb && typeof cb == 'function' ? cb() : '';
-                        }));
+                        }))
+                        .pipe(Tools.dest(that.server));
                     }
                 }));
             }
@@ -1528,17 +1825,18 @@ UIClass.prototype.uploadImg = function(cb){
         if(that.argv.p){
             imageminParamObj['use'] = [pngquant()];
         }
-        gulp.src(that.imgFiles[key], {base: config.root_mediastyle})
+        gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
-            .pipe(gulp.dest(that.dir))
-            .pipe(next(function(){
+            .pipe(next(function(fileList){
                 if(++key < that.imgFiles.length){
                     upImg(key);
                 }else {
+                    process.send({action: 'sync', arsFileArr: fileList});
                     console.log('图片上传到完毕...');
                     cb && typeof cb == 'function' ? cb() : '';
                 }
-            }));
+            }))
+            .pipe(Tools.dest(config.servers[that.serverId]));
     }
     upImg(0);
 }
@@ -1553,11 +1851,11 @@ UIClass.prototype.uploadHtml = function(cb){
             pathDir.basename = nameIndex++;
         }))
         .pipe(tap(function(file){
-            var reg = /\bhttp:\/\/imgcache.gtimg.cn\/mediastyle\//g;
+            var reg = new RegExp('^' + config.servers[that.serverId].site.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'));
             var content = file.contents.toString().replace(reg, '');
             file.contents = new Buffer(content);
         }))
-        .pipe(gulp.dest(that.dir))
+        .pipe(Tools.dest(that.server))
         .pipe(next(function(){
             //打开1.html页面
             var projDir = path.basename(that.dir);
@@ -1581,10 +1879,12 @@ process.on("message",function(message) {
             process.send({
                 action: 'init_data',
                 root_mediastyle: config.root_mediastyle,
+                root_mediastyle_selection: config.baseJson.root_mediastyle_selection,
                 task: config.task,
                 template: config.template,
                 servers: config.servers,
-                hosts: JSON.stringify(hosts.get()),
+                localServer: config.baseJson.localServer,
+                hosts: !!config.baseJson.hostsUse ? JSON.stringify(require('hosts-group').get()) : null,
                 callback: message.callback || ''
             });
             break;
@@ -1599,9 +1899,9 @@ process.on("message",function(message) {
             tcnt.time('耗时');
             var commandResult = gulpCommandSplit(message.command);
             if(!!commandResult){
-                gulpCommandRun(commandResult, function(cbDataArr, state){
+                gulpCommandRun(commandResult, function(cbDataArr, state, storage){
                     var timeNeed = tcnt.timeEnd('耗时');
-                    process.send({action: 'command', code: message.code, result: message.name ? (message.name + '成功......   耗时：' + timeNeed + 'ms') : '', cbDataArr: cbDataArr, state: state, callback: message.callback});
+                    process.send({action: 'command', code: message.code, result: message.name ? (message.name + '成功......   耗时：' + timeNeed + 'ms') : '', cbDataArr: cbDataArr, state: state, storage: storage, callback: message.callback});
                 });
             }else {
                 var childCmdProcess = childProcess.exec(message.command, function(err,stdout,stderr){
@@ -1628,6 +1928,20 @@ process.on("message",function(message) {
             }
     }
     
+});
+
+
+//监听到control+c/control+d的事件
+//官方API说，这个监听之后，node.js是不会自己退出的，所以需要手动的退出。
+process.on('SIGINT', function() {
+    //关闭开启的服务器
+    var localServer = require('./lib/localserver/index.js');
+    console.log('Tips: 本地开启的服务器已结束！');
+    for(var i = 0, len = config.localServerCache.length; i < len; i++){
+        localServer.closeServer(config.localServerCache[argv.i]);
+    }
+    //需要手动退出
+    process.exit(0);
 });
 
 
