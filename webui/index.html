@@ -67,6 +67,14 @@
                                     </p>
                                 </label>
                             </li>
+                            <li class="main_li">
+                                <label for="radio_html_include" class="main_nav" href="#">
+                                    <p>
+                                        <input type="radio" name="radio__base" data-id="radio_html_include" id="radio_html_include"/>
+                                        <span>HTML模板化生成</span>
+                                    </p>
+                                </label>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -78,6 +86,11 @@
                                 <input type="checkbox" class="sync" id="sync"/>
                                 <label for="sync">同步资源</label>
                             </li>
+                            <li id="guanglian_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="guanglian" id="guanglian"/>
+                                <label for="guanglian">检查关联性</label>
+                            </li>
                             <li id="stamp_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" checked class="stamp" id="stamp"/>
@@ -87,6 +100,11 @@
                                 <i class="line"></i>
                                 <input type="checkbox" class="absolute" id="absolute"/>
                                 <label for="absolute">转为绝对路径</label>
+                            </li>
+                            <li id="cssrename_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="cssrename" id="cssrename"/>
+                                <label for="cssrename">样式重命名(后缀)</label>
                             </li>
                             <li id="folder_fun">
                                 <i class="line"></i>
@@ -146,6 +164,21 @@
         </div>
     </div>
 
+    <div class="mod_layer_wrap css_rename_layer" id="css_rename_layer" style="display: none">
+        <div class="mod_layer">
+            <a class="close mod_layer_wrap_close" href="#">x</a>
+            <h2 class="mod_layer_title">样式重命名(后缀)</h2>
+            <div class="content">
+                <p class="mod_flex_layout__row">
+                    <input type="text" placeholder="为上传的样式添加一个后缀吧" class="mod_flex_layout__text css_rename"/>
+                </p>
+                <p class="mod_flex_layout__row mod_layer_btn__group">
+                    <a class="mod_layer_btn" href="###">确定</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
     <div class="mod_layer_wrap dir_config_layer" id="dir_config_layer" style="display: none">
         <div class="mod_layer_anim">
             <h2 class="mod_layer_title">设置</h2>
@@ -162,7 +195,7 @@
                 <a class="btn_add_server" id="btn_add_server" href="#"><strong>+</strong>添加新服务器映射</a>
             </div>
             <div class="content content_hosts">
-                <a class="btn_add_hosts" id="btn_add_hosts" href="#"><strong>+</strong>添加新Hosts</a>
+                <a class="mod_btn_add btn_add_hosts" id="btn_add_hosts" href="#"><strong>+</strong>添加新Hosts</a>
                 <div class="hosts_wrap">
                    <div class="hosts_group_list" id="hosts_group_list">
                        <ul>
@@ -183,8 +216,49 @@
             <div class="content content_more">
                 <h3>站点根目录设置</h3>
                 <div class="mod_flex_layout__row root">
-                    <input type="text" readonly placeholder="填写站点根目录" class="mod_flex_layout__text root_text"/>
-                    <a class="mod_flex_layout__btn mod_choose_dir root_file" href="javascript:void(0);">选择目录</a>
+                    <!-- <input type="text" readonly placeholder="填写站点根目录" class="mod_flex_layout__text root_text"/> -->
+                    <div class="mod_flex_layout__text">
+                        <input type="text" readonly placeholder="填写站点根目录" class=" root_text"/>
+                        <div class="myselect">
+                            <ul class="myselect__inner">
+                                <li class="myselect__item">
+                                    <p class="myselect__value">1111</p>
+                                    <a class="myselect__btn_delect" title="删除这个目录" href="#">delete</a>
+                                </li>
+                                <li class="myselect__item">
+                                    <p class="myselect__value">1111</p>
+                                    <a class="myselect__btn_delect" title="删除这个目录" href="#">delete</a>
+                                </li>
+                                <li class="myselect__item">
+                                    <p class="myselect__value">1111</p>
+                                    <a class="myselect__btn_delect" title="删除这个目录" href="#">delete</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <a class="mod_flex_layout__btn root_file" href="javascript:void(0);">添加目录</a>
+                </div>
+                <h3>本地服务器设置</h3>
+                <div class="local_server">
+                    <a class="mod_btn_add btn_add_local_server" id="btn_add_local_server" href="#"><strong>+</strong>添加新本地服务器</a>
+                    <ul class="local_server__inner">
+                        <li class="local_server__item">
+                            <a class="btn_update" href="#">update</a>
+                            <a class="btn_delete" href="#">remove</a>
+                            <h3 class="local_server__title"><label><input type="checkbox"/>testname</label></h3>
+                            <div class="local_server__content">
+                                <div class="mod_flex_layout__row">
+                                    <label>目录：</label><input type="text" readonly placeholder="本地服务器目录" class="mod_flex_layout__text localserver_text"/>
+                                </div>
+                                <div class="mod_flex_layout__row">
+                                    <label>host：</label><input type="text" readonly placeholder="本地服务器host" class="mod_flex_layout__text localserver_host"/>
+                                </div>
+                                <div class="mod_flex_layout__row">
+                                    <label>端口：</label><input type="text" readonly placeholder="本地服务器端口" class="mod_flex_layout__text localserver_port"/>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
                 <h3>更新版本</h3>
                 <div class="mod_flex_layout__row root">
@@ -236,11 +310,41 @@
                     <label>执行命令：</label>
                     <input type="text" placeholder="使用命令执行时的任务名字" required class="mod_flex_layout__text"/> 
                 </p>
-                <p class="mod_flex_layout__row server_dir">
-                    <label>映射路径：</label>
-                    <input type="text" required placeholder="服务器映射在本地的路径" class="mod_flex_layout__text"/> 
-                    <a class="mod_flex_layout__btn mod_choose_dir" href="javascript:void(0);">选择目录</a>
-                </p>
+                <div class="server_way">
+                    <label>映射方式：<select class="mod_select" id="server_way__select">
+                        <option value="SERVER_WAY_DIR">路径</option>
+                        <option value="SERVER_WAY_SSH">ssh</option>
+                    </select></label>
+                    <div class="server_way__inner" id="SERVER_WAY_DIR">
+                        <p class="mod_flex_layout__row server_dir">
+                            <label>映射路径：</label>
+                            <input type="text" required placeholder="服务器映射在本地的路径" class="mod_flex_layout__text"/> 
+                            <a class="mod_flex_layout__btn mod_choose_dir" href="javascript:void(0);">选择目录</a>
+                        </p>
+                    </div>
+                    <div class="server_way__inner server_ssh" id="SERVER_WAY_SSH" style="display:none">
+                        <p class="mod_flex_layout__row server_ssh__host">
+                            <label>ssh主机：</label>
+                            <input type="text" required placeholder="映射ssh主机" class="mod_flex_layout__text"/> 
+                        </p>
+                        <p class="mod_flex_layout__row server_ssh__port">
+                            <label>ssh端口：</label>
+                            <input type="text" required placeholder="映射ssh端口" class="mod_flex_layout__text"/> 
+                        </p>
+                        <p class="mod_flex_layout__row server_ssh__user">
+                            <label>ssh用户：</label>
+                            <input type="text" required placeholder="映射ssh用户" class="mod_flex_layout__text"/> 
+                        </p>
+                        <p class="mod_flex_layout__row server_ssh__pwd">
+                            <label>ssh密码：</label>
+                            <input type="password" required placeholder="映射ssh密码" class="mod_flex_layout__text"/> 
+                        </p>
+                        <p class="mod_flex_layout__row server_ssh__path">
+                            <label>ssh路径：</label>
+                            <input type="text" required placeholder="映射ssh路径" class="mod_flex_layout__text"/> 
+                        </p>
+                    </div>
+                </div>
                 <p class="mod_flex_layout__row server_format">
                     <label>允许格式：</label>
                     <input type="text" placeholder="填写允许上传到的格式，用 , 隔开" required class="mod_flex_layout__text"/> 
@@ -252,6 +356,36 @@
                 <p class="mod_flex_layout__row server_site">
                     <label>外网地址：</label>
                     <input type="text" placeholder="填写服务器的外网访问链接地址" class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row mod_layer_btn__group">
+                    <a class="mod_layer_btn" href="###">保存</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mod_layer_wrap local_server_layer" id="local_server_layer" style="display: none">
+        <div class="mod_layer">
+            <a class="close mod_layer_wrap_close" href="#">x</a>
+            <h2 class="mod_layer_title">本地服务器设置</h2>
+            <div class="content">
+                <p class="mod_flex_layout__row local_server_state"><label for="input_local_server_state">自动启动：</label><input type="checkbox" id="input_local_server_state"/></p>
+                <p class="mod_flex_layout__row local_server_name">
+                    <label>服务器名：</label>
+                    <input type="text" placeholder="填写服务器名字" required class="mod_flex_layout__text"/>
+                </p>
+                <p class="mod_flex_layout__row local_server_dir">
+                    <label>映射路径：</label>
+                    <input type="text" required placeholder="填写服务器映射在本地的路径" class="mod_flex_layout__text"/> 
+                    <a class="mod_flex_layout__btn mod_choose_dir" href="javascript:void(0);">选择目录</a>
+                </p>
+                <p class="mod_flex_layout__row local_server_host">
+                    <label>主机host：</label>
+                    <input type="text" placeholder="填写主机host" required class="mod_flex_layout__text"/> 
+                </p>
+                <p class="mod_flex_layout__row local_server_port">
+                    <label>主机端口：</label>
+                    <input type="text" placeholder="填写端口" required class="mod_flex_layout__text"/> 
                 </p>
                 <p class="mod_flex_layout__row mod_layer_btn__group">
                     <a class="mod_layer_btn" href="###">保存</a>
@@ -275,11 +409,27 @@
     </div>
 
     <!-- 升级_S -->
-    <div class="update_wrap" style="display: none">
+    <div class="update_wrap" id="update_tips" style="display: none">
+        <div class="update__inner">
+            <h2 class="update__title">检测到有新版本，更新了如下功能：</h2>
+            <ul class="update__function" id="update__function">
+                <li>1.功能功能功能功能功能功能</li>
+                <li>2.功能功能功能功能功能功能</li>
+                <li>3.功能功能功能功能功能功能</li>
+                <li>4.功能功能功能功能功能功能</li>
+            </ul>
+            <p class="update__btns">
+                <a class="mod_layer_btn update__btn_update" id="update__btn_update" href="#">立即更新</a>
+                <a class="mod_layer_btn update__btn_cancel" id="update__btn_cancel" href="#">跳过</a>
+            </p>
+        </div>
+    </div>
+    <div class="update_wrap" id="update_ing" style="display: none">
         <img src="style/img/loading.gif"/>
         <p class="check_tips">检查新版本中，请稍候...</p>
         <p class="update_tips">正在升级新版本，请不要关闭窗口哟...</p>
     </div>
+
     <!-- 升级_E -->
 
     <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>

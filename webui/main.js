@@ -9,7 +9,6 @@ require('crash-reporter').start();
 var loginWindow = null;
 // 当app所有的窗口都关闭的情况退出
 app.on('window-all-closed', function() {
-  console.log('222222222222');
   if (process.platform != 'darwin')
     app.quit();
 });

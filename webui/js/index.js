@@ -63,6 +63,14 @@ var menuLib = {
       rules: ['.png', '.jpg', '.gif'],
       child: ['#png8_fun'],
       tips: '请把图片拖到这里合并'
+    },
+    radio_html_include: {
+      type: 'tools',
+      who: 'HTML模板化生成',
+      F5: null,
+      rules: ['.html'],
+      child: [],
+      tips: '请把HTML拖到这里合并引入的页面'
     }
   },
   // 过滤合法文件
@@ -87,15 +95,25 @@ var menuLib = {
   },
   // 生成提单
   getArs: function(arr){
-    var strArs = '<div class="ars_list"><h3>提单文件列表：</h3><div class="ars_content">';
-    var strSite = '<div class="site_list"><h3>网址列表：</h3><div class="site_content">';
+    var strArs = '<div class="ars_list"><h3>提单文件列表：</h3>';
+    var strSite = '<div class="site_list"><h3>网址列表：</h3>';
+    if(!arr.length){
+      strArs += '<p class="ars_null_tips">暂无相关文件</p>';
+      strSite += '<p class="ars_null_tips">暂无相关文件</p>';
+    }
+    strArs += '<div class="ars_content">';
+    strSite += '<div class="site_content">';
     var tmpArs = globalServers[menuId.replace('base_server_','')].ars;
     var tmpSite = globalServers[menuId.replace('base_server_','')].site;
     for(var i = 0, len = arr.length; i < len; i++){
-      strArs += '<p>' + arr[i].replace(/.+?(?=mediastyle)/, tmpArs).replace(/\\/g, '/') + '</p>';
-      strSite += '<p>' + arr[i].replace(/.+?(?=mediastyle)/, tmpSite).replace(/\\/g, '/') + '</p>';
+      strArs += '<p>' + arr[i].replace(/\\/g, '/').replace(initData.root_mediastyle, tmpArs) + '</p>';
+      strSite += '<p>' + arr[i].replace(/\\/g, '/').replace(initData.root_mediastyle, tmpSite) + '</p>';
     }
-    strArs += '</div><p class="btn_ars_wrap"><a class="btn_copy_ars" href="#">狠狠点击这里复制提单</a></p></div>';
+    strArs += '</div><p class="btn_ars_wrap" ';
+    if(!arr.length){
+      strArs += 'style="display:none" ';
+    }
+    strArs += '><a class="btn_copy_ars" href="#">狠狠点击这里复制提单</a></p></div>';
     strSite += '</div></div>';
     var $strWrapNode = $('<div class="special_list"></div>');
     $strWrapNode.append(strArs).append(strSite);
@@ -140,7 +158,6 @@ var start_process = function (child_process, indexFile) {
     var cp = child_process.fork(indexFile); 
     // 初始化数据
     cp.send({action: 'init_data'});
-
     // domInit是否已经执行，防止多次初始化数据时domInit函数多次执行
     var domIsInit = false; 
 
@@ -149,30 +166,44 @@ var start_process = function (child_process, indexFile) {
         // 数据初始化
         case 'init_data':
           initData = message;
+          //站点根目录设置
           $('.root_text').val(message.root_mediastyle);
+          $('.myselect__inner').html('');
+          var myselectStr = '';
+          for(var i = 0, len = message.root_mediastyle_selection.length; i < len; i++){
+            myselectStr += '<li class="myselect__item">\
+                                    <p class="myselect__value" title="'+ message.root_mediastyle_selection[i] +'">'+ message.root_mediastyle_selection[i] +'</p>\
+                                    <a class="myselect__btn_delect" data-dir="'+ message.root_mediastyle_selection[i] +'" title="删除这个目录" href="#">delete</a>\
+                                </li>';
+          }
+          $('.myselect__inner').append(myselectStr);
           globalServers = message.servers;
           // hosts管理
-          hostsJson = JSON.parse(message.hosts);
-          $('#hosts_group_list ul').html('');
-          for(var key in hostsJson){
-            var hostListStr = '';
-            var selectAll = false;
-            for(var i = 0, len = hostsJson[key].length; i < len; i++){
-              var checkedStr = '';
-              if(!hostsJson[key][i].disabled){
-                checkedStr = 'checked';
-                selectAll = true;
+          if(message.hosts){
+            hostsJson = JSON.parse(message.hosts);
+            $('#hosts_group_list ul').html('');
+            for(var key in hostsJson){
+              var hostListStr = '';
+              var selectAll = false;
+              for(var i = 0, len = hostsJson[key].length; i < len; i++){
+                var checkedStr = '';
+                if(!hostsJson[key][i].disabled){
+                  checkedStr = 'checked';
+                  selectAll = true;
+                }
+                hostListStr += '<p class="hosts_list_item"><label><input type="checkbox" ' + checkedStr + ' group="' + key + '"/><span class="hosts_ip">' + hostsJson[key][i].ip + '</span><span class="hosts_domain">' + hostsJson[key][i].domain + '</span></label></p>';
               }
-              hostListStr += '<p class="hosts_list_item"><label><input type="checkbox" ' + checkedStr + ' group="' + key + '"/><span class="hosts_ip">' + hostsJson[key][i].ip + '</span><span class="hosts_domain">' + hostsJson[key][i].domain + '</span></label></p>';
+              $('#hosts_group_list ul').prepend('\
+                <li>\
+                    <a class="btn_update" data-group="' + key + '" href="#">update</a>\
+                    <a class="btn_delete" data-group="' + key + '" href="#">remove</a>\
+                    <h3 class="hosts_title"><label><input type="checkbox" ' + (selectAll ? 'checked' : '') + ' groupbox="' + key + '"/>' + key + '</label></h3>\
+                    <div class="hosts_list">' + hostListStr + '</div>\
+                </li>\
+              ');
             }
-            $('#hosts_group_list ul').prepend('\
-              <li>\
-                  <a class="btn_update" data-group="' + key + '" href="#">update</a>\
-                  <a class="btn_delete" data-group="' + key + '" href="#">remove</a>\
-                  <h3 class="hosts_title"><label><input type="checkbox" ' + (selectAll ? 'checked' : '') + ' groupbox="' + key + '"/>' + key + '</label></h3>\
-                  <div class="hosts_list">' + hostListStr + '</div>\
-              </li>\
-            ');
+          }else{
+            $('.setting_menu_hosts, .content_hosts').remove();
           }
           // 清空
           $('.sidebar_servers ul').html('');
@@ -199,10 +230,40 @@ var start_process = function (child_process, indexFile) {
               who: server.name,
               F5: null,
               rules: server.format,
-              child: ['#sync_fun', '#stamp_fun', '#absolute_fun', '#folder_fun', '#png8_fun'],
+              child: ['#sync_fun', '#guanglian_fun','#stamp_fun', '#absolute_fun', '#cssrename_fun', '#folder_fun', '#png8_fun'],
               tips: '请把文件拖到这里上传到' + server.name
             };
           };
+
+          // 本地服务器
+          $('.local_server__inner').html('');
+          for(var i = 0, len = message.localServer.length; i < len; i++){
+            var localServer = message.localServer[i];
+            var localServerState = localServer.state ? 'checked' : '';
+            // 侧边栏服务器
+            $('.local_server__inner').append('\
+                <li class="local_server__item">\
+                  <a class="btn_update" data-id="' + i + '" href="#">update</a>\
+                  <a class="btn_delete" data-id="' + i + '" href="#">remove</a>\
+                    <h3 class="local_server__title"><label class="local_server__select"><input ' + localServerState + ' data-id="' + i + '" type="checkbox"/>' + localServer.name + '</label></h3>\
+                    <div class="local_server__content">\
+                        <div class="mod_flex_layout__row">\
+                            <label>目录：</label>\
+                            <input type="text" readonly placeholder="本地服务器目录" value="' + localServer.dir + '" class="mod_flex_layout__text localserver_text"/>\
+                        </div>\
+                        <div class="mod_flex_layout__row">\
+                            <label>host：</label>\
+                            <input type="text" placeholder="本地服务器host" value="' + localServer.host + '" class="mod_flex_layout__text localserver_host"/>\
+                        </div>\
+                        <div class="mod_flex_layout__row">\
+                            <label>端口：</label>\
+                            <input type="text" placeholder="本地服务器端口" value="' + localServer.port + '" class="mod_flex_layout__text localserver_port"/>\
+                        </div>\
+                    </div>\
+                </li>\
+             ');
+          }
+
           task = message.task;
           var tplOptStr = '';
           for(var key in message.template){
@@ -211,6 +272,10 @@ var start_process = function (child_process, indexFile) {
           $('#tpl_select_name').html(tplOptStr);
           // 初始化DOM
           if(!domIsInit){
+            //开启相关本地服务
+            cp.send({action: 'command', code: task['localServer'], command: 'gulp ' + task['localServer'] + ' -w run -a'});
+            //检查是否有新版本
+            cp.send({action: 'command', code: task['update'], name: '检查是否有新版本', command: 'gulp ' + task['update'] + ' -t'});
             domIsInit = true; 
             domInit(cp);
           }
@@ -224,20 +289,24 @@ var start_process = function (child_process, indexFile) {
           if(tmpArs){
             var strArs = '';
             var strSite = '';
-            for(var i = 0, len = message.imgs.length; i < len; i++){
-              strArs += '<p>' + message.imgs[i].replace(/.+?(?=mediastyle)/, tmpArs).replace(/\\/g, '/') + '</p>';
-              strSite += '<p>' + message.imgs[i].replace(/.+?(?=mediastyle)/, tmpSite).replace(/\\/g, '/') + '</p>';
+            if(message.arsFileArr.length){
+              $('.special_list').eq(-1).find('.btn_ars_wrap').show();
+              $('.special_list').eq(-1).find('.ars_null_tips').hide();
             }
-            $('.ars_list .ars_content').eq(-1).append(strArs);
-            $('.site_list .site_content').eq(-1).append(strSite);
+            for(var i = 0, len = message.arsFileArr.length; i < len; i++){
+              strArs += '<p>' + message.arsFileArr[i].replace(/\\/g, '/').replace(initData.root_mediastyle, tmpArs) + '</p>';
+              strSite += '<p>' + message.arsFileArr[i].replace(/\\/g, '/').replace(initData.root_mediastyle, tmpSite) + '</p>';
+            }
+            $('.special_list').eq(-1).find('.ars_content').append(strArs);
+            $('.special_list').eq(-1).find('.site_content').append(strSite);
           }
           // 展示普通同步资源上传服务器
           else {
-            var imgsArr = [];
-            for(var i = 0, len = message.imgs.length; i < len; i++){
-              imgsArr.push(message.imgs[i]);
+            var tmpArr = [];
+            for(var i = 0, len = message.arsFileArr.length; i < len; i++){
+              tmpArr.push(message.arsFileArr[i]);
             }
-            menuLib.print(menuId, imgsArr);
+            menuLib.print(menuId, tmpArr);
           }
           break;
 
@@ -270,17 +339,30 @@ var start_process = function (child_process, indexFile) {
           F5Finish = true;
           // 升级版本提示特殊处理
           if(message.code == task['update']){
-            if(message.state == 0){
-              $('.update_wrap').hide();
-              return;
-            }else if(message.state == 1){
-              $('.update_wrap').addClass('updating');
-              return;
-            }else if(message.state == 2){
-              $('.update_wrap').removeClass('updating').hide();
-              menuLib.print(['正在重新启动程序...']);
-              win.reload(); //重新加载页面
-              alert('升级新版本完成！');
+            switch(message.state){
+              case -1:
+                var htmlStr = '';
+                for(var i = 0, len = message.storage.length; i < len; i++){
+                  htmlStr += '<li>' + (i+1) + '.' + message.storage[i] + '</li>';
+                }
+                $("#update__function").html(htmlStr);
+                $('#update_tips').show();
+                break;
+
+              case 0:
+                $('#update_ing').hide();
+                break;
+
+              case 1:
+                $('#update_ing').addClass('updating');
+                break;
+
+              case 2:
+                $('#update_ing').removeClass('updating').hide();
+                menuLib.print(['正在重新启动程序...']);
+                win.reload(); //重新加载页面
+                alert('升级新版本完成！');
+                break;
             }
           }
           // 命令执行完毕成功提示
@@ -303,8 +385,10 @@ var start_process = function (child_process, indexFile) {
       $('#holder').animate({scrollTop: holder.scrollHeight}, 600); 
     });
 
-    cp.on('exit', function () { 
-        start_process(child_process, indexFile); 
+    cp.on('exit', function() { 
+      menuLib.print(['系统遇到错误...','正在重启程序...']);
+      win.reload(); //重新加载页面
+      start_process(child_process, indexFile); 
     }) 
 } 
 
@@ -324,7 +408,7 @@ function domInit(cp){
 
   $(function(){
     // 左侧栏栏目初始化
-    function initSidebar(){
+    function initSidebar(obj){
       menuId = $('.main_li input:radio[name="radio__base"]:checked').attr('data-id');
       console.log('\nmenuId--->'+menuId);
       menuLib.showInnerTips(menuId);
@@ -337,11 +421,12 @@ function domInit(cp){
           $(child[i]).show();
           if($(child[i]).find('input').attr('checked')){
             $(child[i]).addClass('current');
+            // localStorage.setItem(menuId+'_'+$(child[i]).attr('id'), true);
           }
         }
       }
       $('#'+menuId).parent().parent().parent().addClass('current').append($('#child_menu').html());
-    }
+     }
 
     initSidebar();
 
@@ -355,7 +440,7 @@ function domInit(cp){
 
     // 改变左侧任务时
     $('.sidebar_item').on('change', 'input:radio[name="radio__base"]', function(){
-        initSidebar();
+        initSidebar(this);
     }); 
 
     // main_menu切换
@@ -367,12 +452,76 @@ function domInit(cp){
     });
 
     // 可先项事件
-    $('.sidebar_item .main_li').on('click', '.sub_nav_box li', function(){
-      if($(this).find('input').attr('checked')){
-        $(this).addClass('current');
-        return;
+    $('.sidebar_item .main_li').on('change', '.sub_nav_box li input', function(){
+      var that = this.parentNode;
+      switch($(this).parent().attr('id')){
+
+        case 'folder_fun':
+          //从未选中变为选中
+          if($(this).attr('checked')){
+            deleteCheckedStyle(that);
+            $('#dir_mobile_layer').show();
+            $("#dir_mobile_layer .mod_layer_btn").off('click');
+            $("#dir_mobile_layer .mod_layer_btn").on('click', function(){
+              var mobileDir = $('#dir_mobile_layer .mobile_dir').val();
+              if(!mobileDir.trim()){
+                console.log('文件名不能为空哟～');
+                alert('文件名不能为空哟～');
+                return;
+              }
+              addCheckedStyle(that);
+              $('#dir_mobile_layer').hide();
+            });
+          }
+          break;
+
+          case 'cssrename_fun':
+            //从未选中变为选中
+            if($(this).attr('checked')){
+              deleteCheckedStyle(that);
+              $('#css_rename_layer').show();
+              $("#css_rename_layer .mod_layer_btn").off('click');
+              $("#css_rename_layer .mod_layer_btn").on('click', function(){
+                var mobileDir = $('#css_rename_layer .css_rename').val();
+                if(!mobileDir.trim()){
+                  console.log('文件名不能为空哟～');
+                  alert('文件名不能为空哟～');
+                  return;
+                }
+                addCheckedStyle(that);
+                $('#css_rename_layer').hide();
+              });
+            }
+            break;
+          
+          default:
+            checkedStyle(that);
       }
-      $(this).removeClass('current');
+
+      function addCheckedStyle(that){
+        if(!$(that).find('input').attr('checked')){
+          $(that).find('input').attr('checked', true);
+          $(that).addClass('current');
+          return;
+        }
+      }
+
+      function deleteCheckedStyle(that){
+        if($(that).find('input').attr('checked')){
+          $(that).find('input').attr('checked', false);
+          $(that).removeClass('current');
+          return;
+        }
+      }
+
+      function checkedStyle(that){
+        if($(that).find('input').attr('checked')){
+          $(that).addClass('current');
+          return;
+        }
+        $(that).removeClass('current');
+      }
+
     });
 
     // 关闭浮层面板
@@ -386,7 +535,15 @@ function domInit(cp){
         // 保存设置数据 => 站点根目录
         var root = $('.root_text').val();
         if(root != initData.root_mediastyle){
-          cp.send({action: 'command', code: task['config'], name: '修改站点根目录', command: 'gulp ' + task['config'] + ' -s root_mediastyle=' + filePath});
+          cp.send({action: 'command', code: task['config'], name: '修改当前站点根目录', command: 'gulp ' + task['config'] + ' -s root_mediastyle=' + JSON.stringify(root)});
+        }
+        var selectVals = $('.myselect').removeClass('myselect--on').find('.myselect__value');
+        var selectValArr = [];
+        for(var i = 0, len = selectVals.length; i < len; i++){
+          selectValArr.push(selectVals.eq(i).text());
+        }
+        if(selectValArr.join('') != initData.root_mediastyle_selection.join('')){
+          cp.send({action: 'command', code: task['config'], name: '修改站点根目录分类', command: 'gulp ' + task['config'] + ' -s root_mediastyle_selection=' + JSON.stringify(selectValArr)});
         }
         $this.find('.mod_layer_anim').removeClass('play');
         setTimeout(function(){
@@ -402,7 +559,7 @@ function domInit(cp){
     // 打开配置面板
     $('.btn_config').click(function(){
       //重新初始化一下数据，可能已经修改
-      cp.send({action: 'init_data', callback: 'initSidebar'}); 
+      cp.send({action: 'init_data', callback: 'callback_init_sidebar'}); 
       $('#dir_config_layer').show(10, function(){
         $('#dir_config_layer .mod_layer_anim').addClass('play');
       });
@@ -425,6 +582,33 @@ function domInit(cp){
       openDirectory(cb);
     });
 
+    // 添加根目录
+    $('.root_file').on('click', function(){
+      var that = this;
+      var cb = function(filePath){
+        $('.myselect__inner').append('<li class="myselect__item">\
+                                    <p class="myselect__value" title="'+ filePath +'">'+ filePath +'</p>\
+                                    <a class="myselect__btn_delect" data-dir="'+ filePath +'" title="删除这个目录" href="#">delete</a>\
+                                </li>');
+      };
+      openDirectory(cb);
+    });
+
+    // 删除根目录
+    $('.myselect').on('click','.myselect__btn_delect',function(){
+      $(this).parent().remove();
+    });
+
+    // 选择切换根目录
+    $('.myselect').on('click','.myselect__value',function(){
+      $('.root_text').val($(this).text());
+    });
+
+    // 打开/隐藏根目录
+    $('.myselect').on('click', function(){
+      $('.myselect').toggleClass('myselect--on');
+    });
+
     // 点击单个服务器进行配置
     $('#servers').on('click', '.server_item .btn_view_server', function(){
       // 回填数据
@@ -434,13 +618,43 @@ function domInit(cp){
       $('#server_layer .mod_layer_title').text(server.name);
       $('#server_layer .server_name .mod_flex_layout__text').val(server.name);
       $('#server_layer .server_cmd .mod_flex_layout__text').val(server.cmd);
-      $('#server_layer .server_dir .mod_flex_layout__text').val(server.dir);
+      $('#server_layer .server_dir .mod_flex_layout__text').val(server.dir||'');
+      $('#server_way__select').val(server.way);
+      $('#server_layer .server_ssh__host .mod_flex_layout__text').val((server.ssh||{}).host||'');
+      $('#server_layer .server_ssh__port .mod_flex_layout__text').val((server.ssh||{}).port||'');
+      $('#server_layer .server_ssh__user .mod_flex_layout__text').val((server.ssh||{}).username||'');
+      $('#server_layer .server_ssh__pwd .mod_flex_layout__text').val((server.ssh||{}).password||'');
+      $('#server_layer .server_ssh__path .mod_flex_layout__text').val((server.ssh||{}).path||'');
+      $('#server_layer .server_way__inner').hide();
+      $('#'+server.way).show();
       $('#server_layer .server_format .mod_flex_layout__text').val(server.format);
       $('#server_layer .server_ars .mod_flex_layout__text').val(server.ars);
       $('#server_layer .server_site .mod_flex_layout__text').val(server.site);
       // 更新数据
       $('#server_layer .mod_layer_btn').off('click');
       $('#server_layer .mod_layer_btn').on('click', function(){
+        var name = $('#server_layer .server_name .mod_flex_layout__text').val().trim();
+        var cmd = $('#server_layer .server_cmd .mod_flex_layout__text').val().trim();
+        var way = $('#server_way__select').val();
+        var wayCmd = 'way=' + way;
+        var wayDataNoChange = true;
+        $("#server_layer .server_way .mod_flex_layout__text").removeAttr('required');
+        if(way == 'SERVER_WAY_DIR'){
+          var dir = $('#server_layer .server_dir .mod_flex_layout__text').attr('required','required').val().trim();
+          wayDataNoChange = (dir == server.dir);
+          wayCmd += ',dir=' + dir;
+        }else if(way == 'SERVER_WAY_SSH'){
+          var sshHost = $('#server_layer .server_ssh__host .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshPort = $('#server_layer .server_ssh__port .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshUser = $('#server_layer .server_ssh__user .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshPwd = $('#server_layer .server_ssh__pwd .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshPath = $('#server_layer .server_ssh__path .mod_flex_layout__text').attr('required','required').val().trim();
+          wayDataNoChange = (sshHost==server.ssh.host&&sshPort==server.ssh.port&&sshUser==server.ssh.username&&sshPwd==server.ssh.password&&sshPath==server.ssh.path);
+          wayCmd += ',ssh=host:' + sshHost +'&port:' + sshPort + '&username:' + sshUser + '&password:' + sshPwd + '&path:' + sshPath;
+        }
+        var format = $('#server_layer .server_format .mod_flex_layout__text').val().trim().split(',').join('&');
+        var ars = $('#server_layer .server_ars .mod_flex_layout__text').val().trim();
+        var site = $('#server_layer .server_site .mod_flex_layout__text').val().trim();
         // 数据检查
         $('#server_layer .mod_flex_layout__text').each(function(){
           if((typeof $(this).attr('required') != 'undefined') && !$(this).val().trim()){
@@ -449,25 +663,142 @@ function domInit(cp){
           }
           $(this).removeClass('warnning');
         });
-        var name = $('#server_layer .server_name .mod_flex_layout__text').val().trim();
-        var cmd = $('#server_layer .server_cmd .mod_flex_layout__text').val().trim();
-        var dir = $('#server_layer .server_dir .mod_flex_layout__text').val().trim();
-        var format = $('#server_layer .server_format .mod_flex_layout__text').val().trim().split(',').join('&');
-        var ars = $('#server_layer .server_ars .mod_flex_layout__text').val().trim();
-        var site = $('#server_layer .server_site .mod_flex_layout__text').val().trim();
-        if(name == server.name && cmd == server.cmd && dir == server.dir && format == server.format.join('&') && ars == server.ars && site == server.site){
+        if(name == server.name && cmd == server.cmd && way == server.way && wayDataNoChange && format == server.format.join('&') && ars == server.ars && site == server.site){
           alert('没有配置信息的更新');
           return;
         }
-        var str = 'name=' + name + ',cmd=' + cmd + ',dir=' + dir + ',format=' + format + ',ars=' + ars + ',site=' + site;
+        var str = 'name=' + name + ',cmd=' + cmd + ',' + wayCmd + ',format=' + format + ',ars=' + ars + ',site=' + site;
         cp.send({action: 'command', code: 'server', name: '更新新服务器' + name + '信息', command: 'gulp server -w update -n '+ sId +' -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
         $('#server_layer').hide();
       });
     });
 
+    // 添加新服务器映射
+    $('#btn_add_server').on('click', function(){
+      $('#server_layer').show();
+      $('#server_layer .mod_layer_title').text('添加新服务器映射');
+      $('#server_layer .mod_flex_layout__text').removeClass('warnning').val('');
+      $('#server_layer .mod_layer_btn').off('click');
+      $('#server_layer .mod_layer_btn').on('click', function(){
+        var name = $('#server_layer .server_name .mod_flex_layout__text').val().trim();
+        var cmd = $('#server_layer .server_cmd .mod_flex_layout__text').val().trim();
+        var way = $('#server_way__select').val();
+        var wayCmd = 'way=' + way;
+        $("#server_layer .server_way .mod_flex_layout__text").removeAttr('required');
+        if(way == 'SERVER_WAY_DIR'){
+          var dir = $('#server_layer .server_dir .mod_flex_layout__text').attr('required','required').val().trim();
+          wayCmd += ',dir=' + dir;
+        }else if(way == 'SERVER_WAY_SSH'){
+          var sshHost = $('#server_layer .server_ssh__host .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshPort = $('#server_layer .server_ssh__port .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshUser = $('#server_layer .server_ssh__user .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshPwd = $('#server_layer .server_ssh__pwd .mod_flex_layout__text').attr('required','required').val().trim();
+          var sshPath = $('#server_layer .server_ssh__path .mod_flex_layout__text').attr('required','required').val().trim();
+          wayCmd += ',ssh=host:' + sshHost +'&port:' + sshPort + '&username:' + sshUser + '&password:' + sshPwd + '&path:' + sshPath;
+        }
+        var format = $('#server_layer .server_format .mod_flex_layout__text').val().trim().split(',').join('&');
+        var ars = $('#server_layer .server_ars .mod_flex_layout__text').val().trim();
+        var site = $('#server_layer .server_site .mod_flex_layout__text').val().trim();
+        // 数据检查
+        $('#server_layer .mod_flex_layout__text').each(function(){
+          if((typeof $(this).attr('required') != 'undefined') && !$(this).val().trim()){
+            $(this).addClass('warnning');
+            throw '';
+          }
+          $(this).removeClass('warnning');
+        });
+        var str = 'name=' + name + ',cmd=' + cmd + ',' + wayCmd + ',format=' + format + ',ars=' + ars + ',site=' + site;
+        cp.send({action: 'command', code: 'server', name: '添加新服务器' + name, command: 'gulp server -w add -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
+        $('#server_layer').hide();
+      });
+    });
+
+    // 删除服务器
+    $('#servers').on('click', '.server_item .btn_server_delete', function(){
+      if(!confirm('确定删除该服务器映射？')) return;
+      var sId = $(this).attr('server-id');
+      var server = globalServers[sId];
+      cp.send({action: 'command', code: 'server', name: '删除服务器' + server.name, command: 'gulp server -w delete -n '+ sId, callback: 'callback_init_data_sidebar'});
+    });
+
+    // 服务器映射方式切换
+    $('#server_way__select').change(function(){
+      $('#server_layer .server_way__inner').hide();
+      $('#'+$('#server_way__select').val()).show();
+    });
+
+    // 添加本地服务器
+    $('#btn_add_local_server').click(function(){
+      $('#local_server_layer').show();
+      $('#local_server_layer .mod_layer_btn').off('click');
+      $('#local_server_layer .mod_layer_btn').on('click', function(){
+        var state = !!$('#input_local_server_state').attr('checked');
+        var name =  $('#local_server_layer .local_server_name input').val();
+        var dir =  $('#local_server_layer .local_server_dir input').val();
+        var host =  $('#local_server_layer .local_server_host input').val();
+        var port =  $('#local_server_layer .local_server_port input').val();
+        if(!state || !name || !dir || !port){
+            alert('本地服务器的内容都不要为空哟！');
+            return;
+          }
+          cp.send({action: 'command', code: task['localServer'], name: '添加本地服务器 => ', command: 'gulp ' + task['localServer'] + ' -n ' + name + ' -d ' + dir + ' -h ' + host + ' -p ' + port + '-s ' + state, callback: 'callback_init_data'});
+          $('#local_server_layer').hide();
+      });
+    });
+
+    // 更新本地服务器
+    $('.local_server__inner').on('click', '.btn_update', function(){
+      $('#local_server_layer').show();
+      var id = $(this).attr('data-id');
+      var server = initData.localServer[id];
+      $('#input_local_server_state').attr('checked', server.state);
+      $('#local_server_layer .local_server_name input').val(server.name);
+      $('#local_server_layer .local_server_dir input').val(server.dir);
+      $('#local_server_layer .local_server_host input').val(server.host);
+      $('#local_server_layer .local_server_port input').val(server.port);
+      $('#local_server_layer .mod_layer_btn').off('click');
+      $('#local_server_layer .mod_layer_btn').on('click', function(){
+        var state = !!$('#input_local_server_state').attr('checked');
+        var name =  $('#local_server_layer .local_server_name input').val();
+        var dir =  $('#local_server_layer .local_server_dir input').val();
+        var host =  $('#local_server_layer .local_server_host input').val();
+        var port =  $('#local_server_layer .local_server_port input').val();
+        if(!state || !name || !dir || !port){
+            alert('本地服务器的内容都不要为空哟！');
+            return;
+          }
+          if(state == server.state && name == server.name && dir == server.dir && port == server.port){
+            alert('没有本地服务器信息的更新');
+            return;
+          }
+          cp.send({action: 'command', code: task['localServer'], name: '更新本地服务器 => ', command: 'gulp ' + task['localServer'] + ' -w update -s ' + state + ' -i ' + id + ' -n ' + name + ' -d ' + dir + ' -h ' + host + ' -p ' + port, callback: 'callback_init_data'});
+          $('#local_server_layer').hide();
+      });
+    });
+
+    // 删除本地服务器
+    $('.local_server__inner').on('click', '.btn_delete', function(){
+      $('#local_server_layer').show();
+      var id = $(this).attr('data-id');
+      cp.send({action: 'command', code: task['localServer'], name: '删除本地服务器 => ', command: 'gulp ' + task['localServer'] + ' -w delete -i ' + id, callback: 'callback_init_data'});
+    });
+
+    // 开关本地服务器
+    $('.local_server__inner').on('change', '.local_server__select input[type=checkbox]', function(){
+      var id = $(this).attr('data-id');
+      if(!$(this).attr('checked')){
+        $(this).attr('checked', false);
+        cp.send({action: 'command', code: task['localServer'], name: '关闭本地服务器 => ', command: 'gulp ' + task['localServer'] + ' -w stop -i ' + id, callback: 'callback_init_data'});
+      }else {
+        $(this).find('input[type=checkbox]').attr('checked', true);
+        cp.send({action: 'command', code: task['localServer'], name: '启动本地服务器 => ', command: 'gulp ' + task['localServer'] + ' -w run -i ' + id, callback: 'callback_init_data'});
+      }
+      
+    });
+
     // 添加hosts
     $('#btn_add_hosts').on('click', function(){
-      $('#hosts_layer').show();
+      $('#hosts_layer').css({'z-index':9999}).show();
       $('#hosts_layer .mod_layer_btn').off('click');
       $('#hosts_layer .mod_layer_btn').on('click', function(){
         var groupName = $('#hosts_groupname').val().trim();
@@ -576,45 +907,15 @@ function domInit(cp){
       $('.hosts_group_list .hosts_title input[type=checkbox][groupbox=' + group.attr('group') + ']').attr('checked', selectAll);
     });
 
-    // 添加新服务器映射
-    $('#btn_add_server').on('click', function(){
-      $('#server_layer').show();
-      $('#server_layer .mod_layer_title').text('添加新服务器映射');
-      $('#server_layer .mod_flex_layout__text').removeClass('warnning').val('');
-      $('#server_layer .mod_layer_btn').off('click');
-      $('#server_layer .mod_layer_btn').on('click', function(){
-        // 数据检查
-        $('#server_layer .mod_flex_layout__text').each(function(){
-          if((typeof $(this).attr('required') != 'undefined') && !$(this).val().trim()){
-            $(this).addClass('warnning');
-            throw '';
-          }
-          $(this).removeClass('warnning');
-        });
-        var name = $('#server_layer .server_name .mod_flex_layout__text').val().trim();
-        var cmd = $('#server_layer .server_cmd .mod_flex_layout__text').val().trim();
-        var dir = $('#server_layer .server_dir .mod_flex_layout__text').val().trim();
-        var format = $('#server_layer .server_format .mod_flex_layout__text').val().trim().split(',').join('&');
-        var ars = $('#server_layer .server_ars .mod_flex_layout__text').val().trim();
-        var site = $('#server_layer .server_site .mod_flex_layout__text').val().trim();
-        var str = 'name=' + name + ',cmd=' + cmd + ',dir=' + dir + ',format=' + format + ',ars=' + ars + ',site=' + site;
-        cp.send({action: 'command', code: 'server', name: '添加新服务器' + name, command: 'gulp server -w add -d "'+ str +'"', callback: 'callback_init_data_sidebar'});
-        $('#server_layer').hide();
-      });
-    });
-
-    // 删除服务器
-    $('#servers').on('click', '.server_item .btn_server_delete', function(){
-      if(!confirm('确定删除该服务器映射？')) return;
-      var sId = $(this).attr('server-id');
-      var server = globalServers[sId];
-      cp.send({action: 'command', code: 'server', name: '删除服务器' + server.name, command: 'gulp server -w delete -n '+ sId, callback: 'callback_init_data_sidebar'});
-    });
-
     // 升级新版本
-    $('#btn_update_version').on('click', function(){
-      $('.update_wrap').show();
+    $('#btn_update_version, #update__btn_update').on('click', function(){
+      $('#update_ing').show();
       cp.send({action: 'command', code: task['update'], name: '升级新版本', command: 'gulp ' + task['update']});
+    });
+
+    // 跳过升级新版本
+    $('#update__btn_cancel').on('click', function(){
+      $('#update_tips').hide();
     });
 
     // 打开快速创建活动模板浮层
@@ -724,10 +1025,26 @@ function domInit(cp){
       switch(menuId){
           case 'base_server_':
             menuId = menuId + serverId; // 还原menuId
-            function _uploadServer(serverDir){
-              var cmd = 'gulp ui_upload_server -i ' + serverId + ' -d "' + serverDir + '" -f "' + result.join(',') + '"';
+            function _uploadServer(){
+              var cmd = 'gulp ui_upload_server -i ' + serverId + ' -f "' + result.join(',') + '"';
+              var output = (function(){
+                if(globalServers[serverId].way == 'SERVER_WAY_SSH' && globalServers[serverId].ssh) 
+                  return globalServers[serverId].ssh.path || null;
+                return globalServers[serverId].dir || null;
+              })();
+              if($('#folder').attr('checked')){
+                cmd += ' -d "' + path.join(output, $('#dir_mobile_layer .mobile_dir').val()).replace(/\\/g, '/') + '"';
+              }else{
+                cmd += ' -d "' + output + '"';
+              }
               if($('#sync').attr('checked')){
                 cmd += ' -r';
+              }
+              if($('#guanglian').attr('checked')){
+                cmd += ' -g';
+              }
+              if($('#cssrename').attr('checked')){
+                cmd += ' -c "' + $('#css_rename_layer .css_rename').val() + '"';
               }
               if($('#stamp').attr('checked')){
                 cmd += ' -m';
@@ -741,43 +1058,22 @@ function domInit(cp){
               menuLib.print(menuId, result);
               cp.send({action: 'command', code: 'ui_upload_server', name: globalServers[serverId].name, command: cmd});
               if(globalServers[serverId].ars){
-                menuLib.getArs(result);
+                //默认是空数据，占提单位，具体数据由上传后返回
+                menuLib.getArs([]);
               }
               $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
               menuLib.showTaskWaitingTips();
             };
-            // 如果要创建新目录
-            if($('#folder').attr('checked')){
-              $('#dir_mobile_layer').show();
-              // 确定上传
-              $("#dir_mobile_layer .mod_layer_btn").one('click', function(){
-                  menuLib.hash[menuId].F5 = function(){
-                    var mobileDir = $('#dir_mobile_layer .mobile_dir').val();
-                    if(!mobileDir.trim()){
-                      console.log('文件名不能为空哟～');
-                      alert('文件名不能为空哟～');
-                      return;
-                    }
-                    $('#dir_mobile_layer').hide(); 
-                    _uploadServer( path.join(globalServers[serverId].dir, mobileDir) );
-                  };
-                  menuLib.hash[menuId].F5();
-              });
-              // 关闭浮层按钮
-              $('.mod_layer .close').one('click', function(){
-                $('#dir_mobile_layer').hide();
-              })
-            } else {
-              menuLib.hash[menuId].F5 = function(){
-                _uploadServer(globalServers[serverId].dir);
-              }
-              menuLib.hash[menuId].F5();
+            
+            menuLib.hash[menuId].F5 = function(){
+               _uploadServer();
             }
+            menuLib.hash[menuId].F5();
             break;
 
             case 'radio_cssmin':
               menuLib.hash[menuId].F5 = function(){
-                var output = path.join(path.dirname(files[0].path), '__smartgulp__');
+                var output = path.join(path.dirname(files[0].path), '__Yummy__');
                 menuLib.print(menuId, result);
                 cp.send({action: 'command', code: task['minifyCss'], name: '压缩CSS文件', command: 'gulp ' + task['minifyCss'] + ' -o ' + output + ' -f "' + result.join(',') + '"'});
                 $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
@@ -788,7 +1084,7 @@ function domInit(cp){
 
             case 'radio_imgmin':
               menuLib.hash[menuId].F5 = function(){
-                var output = path.join(path.dirname(files[0].path), '__smartgulp__');
+                var output = path.join(path.dirname(files[0].path), '__Yummy__');
                 menuLib.print(menuId, result);
                 var cmd = 'gulp ' + task['minifyImg'] + ' -o ' + output + ' -f "' + result.join(',') + '"';
                 if($('#png8').attr('checked')){
@@ -803,13 +1099,24 @@ function domInit(cp){
 
             case 'radio_sprite':
               menuLib.hash[menuId].F5 = function(){
-                var output = path.join(path.dirname(files[0].path), '__smartgulp__');
+                var output = path.join(path.dirname(files[0].path), '__Yummy__');
                 menuLib.print(menuId, result);
                 var cmd = 'gulp ' + task['sprite'] + ' -o ' + output + ' -f "' + result.join(',') + '"';
                 if($('#png8').attr('checked')){
                   cmd += ' -p';
                 }
                 cp.send({action: 'command', code: task['sprite'], name: '合并图片', command: cmd});
+                $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
+                menuLib.showTaskWaitingTips();
+              };
+              menuLib.hash[menuId].F5();
+              break;
+
+            case 'radio_html_include':
+              menuLib.hash[menuId].F5 = function(){
+                menuLib.print(menuId, result);
+                var cmd = 'gulp ' + task['htmlInclude'] +' -f "' + result.join(',') + '"';
+                cp.send({action: 'command', code: task['htmlInclude'], name: 'HTML模板化合并', command: cmd});
                 $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
                 menuLib.showTaskWaitingTips();
               };
