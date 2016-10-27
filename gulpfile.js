@@ -403,6 +403,14 @@ var config = {
             }
         }
     },
+    //关闭已开启的本地服务器
+    closeLocalServer: function(){
+        var localServer = require('./lib/localserver/index.js');
+        console.log('\nTips: 本地开启的服务器已结束！\n');
+        for(var key in config.localServerCache){
+            localServer.closeServer(config.localServerCache[key]);
+        }
+    },
     // 设置当前工作目录
     setCurrentJob: function(){
         var json = this.jobs;
@@ -1422,6 +1430,7 @@ function taskUpdate(argv, taskCallback){
                 if(!!taskCallback) taskCallback(cbDataArr, 0);
                 return;
             }
+            if(!!taskCallback) taskCallback(cbDataArr, 1);  //开始更新，拉起更新界面
             try{
                 download('https://github.com/yumyfung/yummy/archive/master.zip')
                 .pipe(next(function(){
@@ -1454,6 +1463,8 @@ function taskUpdate(argv, taskCallback){
                             if(!!taskCallback) taskCallback(cbDataArr, 0);
                             return;
                         }
+                        //要关闭退出已开启的本地服务器，防止再次开户冲突
+                        config.closeLocalServer();  
                         console.log('新版本升级完毕...');
                         cbDataArr.push('新版本升级完毕...');
                         if(!!taskCallback) taskCallback(cbDataArr, 2);
@@ -1467,7 +1478,6 @@ function taskUpdate(argv, taskCallback){
                         process.send({action: 'updating', tips: data}); 
                     });
                 }));
-                if(!!taskCallback) taskCallback(cbDataArr, 1);
             }catch(e){
                 console.log('------------------Error--------------');
                 console.log('下载遇到错误，很可能是网络问题，如网络需要代理，请开启。');
@@ -1982,12 +1992,8 @@ process.on("message",function(message) {
 //监听到control+c/control+d的事件
 //官方API说，这个监听之后，node.js是不会自己退出的，所以需要手动的退出。
 process.on('SIGINT', function() {
-    //关闭开启的服务器
-    var localServer = require('./lib/localserver/index.js');
-    console.log('Tips: 本地开启的服务器已结束！');
-    for(var i = 0, len = config.localServerCache.length; i < len; i++){
-        localServer.closeServer(config.localServerCache[argv.i]);
-    }
+    //关闭本地开启的服务器
+    config.closeLocalServer();
     //需要手动退出
     process.exit(0);
 });

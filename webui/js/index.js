@@ -377,7 +377,7 @@ var start_process = function (child_process, indexFile) {
 
         case 'updating':
           if(message.tips){
-            $('#update_tips').text(message.tips);
+            $('#update_process').text(message.tips);
           }
           break;
 
