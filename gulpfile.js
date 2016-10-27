@@ -1422,8 +1422,8 @@ function taskUpdate(argv, taskCallback){
                 if(!!taskCallback) taskCallback(cbDataArr, 0);
                 return;
             }
-            if(!!taskCallback) taskCallback(cbDataArr, 1);
-            download('https://github.com/yumyfung/yummy/archive/master.zip')
+            try{
+                download('https://github.com/yumyfung/yummy/archive/master.zip')
                 .pipe(next(function(){
                     console.log('正在下载更新文件...');
                     process.send({action: 'updating', tips: '正在下载更新文件...'});
@@ -1467,6 +1467,14 @@ function taskUpdate(argv, taskCallback){
                         process.send({action: 'updating', tips: data}); 
                     });
                 }));
+                if(!!taskCallback) taskCallback(cbDataArr, 1);
+            }catch(e){
+                console.log('------------------Error--------------');
+                console.log('下载遇到错误，很可能是网络问题，如网络需要代理，请开启。');
+                console.log(e.message);
+                cbDataArr.push('下载遇到错误，很可能是你网络的问题，如网络需要代理，请开启。');
+                if(!!taskCallback) taskCallback(cbDataArr, 0);
+            }
         });
         lastVersionCheck.stderr.on('data', function(data){
             if(!netWrongTips){
@@ -1754,7 +1762,7 @@ UIClass.prototype.uploadFile = function(cb){
     var fileList = [];
     gulp.src(that.otherFiles, {base: path.normalize(config.root_mediastyle)})
         .pipe(next(function(fileListArr){
-            fileList = fileListArr;
+            fileList = fileList.concat(fileListArr);
         }))
         .pipe(Tools.dest(that.server))
         .pipe(next(function(){
@@ -1816,7 +1824,7 @@ UIClass.prototype.uploadCss = function(cb){
                             keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
                         }))
                         .pipe(next(function(fileListArr){
-                            fileList = fileListArr;
+                            fileList = fileList.concat(fileListArr);
                         }))
                         .pipe(Tools.dest(that.server))
                         .pipe(next(function(){
@@ -1850,6 +1858,7 @@ UIClass.prototype.uploadImg = function(cb){
         cb && typeof cb == 'function' ? cb() : '';
         return;
     }
+    var fileList = [];
     function upImg(key){
         var imageminParamObj = {
             quality: '65-80', 
@@ -1861,11 +1870,10 @@ UIClass.prototype.uploadImg = function(cb){
         if(that.argv.p){
             imageminParamObj['use'] = [pngquant()];
         }
-        var fileList = [];
         gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
             .pipe(next(function(fileListArr){
-                fileList = fileListArr;
+                fileList = fileList.concat(fileListArr);
             }))
             .pipe(Tools.dest(config.servers[that.serverId]))
             .pipe(next(function(){
