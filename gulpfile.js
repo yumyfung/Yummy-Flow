@@ -1424,11 +1424,29 @@ function taskUpdate(argv, taskCallback){
             }
             if(!!taskCallback) taskCallback(cbDataArr, 1);
             download('https://github.com/yumyfung/yummy/archive/master.zip')
+                .pipe(next(function(){
+                    console.log('正在下载更新文件...');
+                    process.send({action: 'updating', tips: '正在下载更新文件...'});
+                }))
                 .pipe(unzip())
+                .pipe(next(function(){
+                    console.log('正在解压下载文件...');
+                    process.send({action: 'updating', tips: '正在解压下载文件...'});
+                }))
                 .pipe(Tools.dest("downloads/"))
+                .pipe(next(function(){
+                    console.log('正在同步替换文件...');
+                    process.send({action: 'updating', tips: '正在同步替换文件...'});
+                }))
                 .pipe(gulpCopy('./', {prefix: 2}))
                 .pipe(next(function(){
-                    childProcess.exec('node ./bin/yummy.js update', function(err,stdout,stderr){
+                    console.log('正在安装更新插件...');
+                    process.send({action: 'updating', tips: '正在安装更新插件...'});
+                    var commandStr = 'node ./bin/yummy.js update';
+                    if(/^darwin/gi.test(process.platform)){
+                        commandStr = 'sudo ' + commandStr;
+                    }
+                    var command = childProcess.exec(commandStr, function(err,stdout,stderr){
                         if(err){
                             console.log(err);
                             console.log('新版本升级插件失败...');
@@ -1439,6 +1457,14 @@ function taskUpdate(argv, taskCallback){
                         console.log('新版本升级完毕...');
                         cbDataArr.push('新版本升级完毕...');
                         if(!!taskCallback) taskCallback(cbDataArr, 2);
+                    });
+                    command.stdout.on('data', function(data){
+                        console.log(data); 
+                        process.send({action: 'updating', tips: data});
+                    });
+                    command.stderr.on('data', function(data){
+                        console.log(data);
+                        process.send({action: 'updating', tips: data}); 
                     });
                 }));
         });

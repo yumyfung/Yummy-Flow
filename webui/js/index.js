@@ -351,6 +351,10 @@ var start_process = function (child_process, indexFile) {
 
               case 0:
                 $('#update_ing').hide();
+                $('#dir_config_layer .mod_layer_anim').removeClass('play');
+                setTimeout(function(){
+                    $('#dir_config_layer').hide();
+                }, 800);
                 break;
 
               case 1:
@@ -368,6 +372,12 @@ var start_process = function (child_process, indexFile) {
           // 命令执行完毕成功提示
           if(message.result){
             $('#holder').append('<p>' + message.result + '</p>');
+          }
+          break;
+
+        case 'updating':
+          if(message.tips){
+            $('#update_tips').text(message.tips);
           }
           break;
 
