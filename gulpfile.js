@@ -41,6 +41,14 @@ var GulpSSH = require('gulp-ssh')
 //工具扩展类
 function Tools(){}
 
+Tools.platform = Tools.prototype.platform = function(){
+    //windows平台
+    if(/^win32/gi.test(process.platform)) return 'win32';
+    //mac平台
+    if(/^darwin/gi.test(process.platform)) return 'darwin';
+    return null;
+}
+
 //深拷贝对象和数组
 Tools.deepClone = Tools.prototype.deepClone = function(obj){
     var str, newobj = obj.constructor === Array ? [] : {};
@@ -58,7 +66,6 @@ Tools.deepClone = Tools.prototype.deepClone = function(obj){
     return newobj;
 };
 
-
 //gulp.dest上传到服务器方法重写
 Tools.dest = Tools.prototype.dest = function(dest){
     try{
@@ -69,8 +76,10 @@ Tools.dest = Tools.prototype.dest = function(dest){
             });
             return gulpSSH.dest(dest.ssh.path);
         }else if((typeof dest=='object')&&(dest.way=='SERVER_WAY_DIR'||!dest.way)){
+            if(Tools.platform != 'darwin') Tools.mkDirFileSync(dest.dir); // 修复mac上文件路径无法创建的问题（没找到原因）
             return gulp.dest(dest.dir);
         }else if((typeof dest=='string')&&!!dest){
+            if(Tools.platform != 'darwin') Tools.mkDirFileSync(dest); // 修复mac上文件路径无法创建的问题（没找到原因）
             return gulp.dest(dest);
         }else{
             console.log('\n----------------Error-------------------------');
