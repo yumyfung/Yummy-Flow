@@ -35,7 +35,7 @@ var prettify = require('gulp-html-prettify');
 var grepContents = require('gulp-grep-contents');
 // var autoprefixer = require('gulp-autoprefixer');
 var stripCssComments = require('gulp-strip-css-comments');
-var GulpSSH = require('gulp-ssh')
+var GulpSSH = require('gulp-ssh');
 
 
 //工具扩展类
@@ -61,7 +61,7 @@ Tools.deepClone = Tools.prototype.deepClone = function(obj){
     } else {
         for(var i in obj){
             newobj[i] = typeof obj[i] === 'object' ? 
-            cloneObj(obj[i]) : obj[i]; 
+            arguments.callee(obj[i]) : obj[i]; 
         }
     }
     return newobj;
@@ -77,10 +77,8 @@ Tools.dest = Tools.prototype.dest = function(dest){
             });
             return gulpSSH.dest(dest.ssh.path);
         }else if((typeof dest=='object')&&(dest.way=='SERVER_WAY_DIR'||!dest.way)){
-            if(Tools.platform == 'darwin') Tools.mkDirFileSync(dest.dir); // 修复mac上文件路径无法创建的问题（没找到原因）
             return gulp.dest(dest.dir);
         }else if((typeof dest=='string')&&!!dest){
-            if(Tools.platform == 'darwin') Tools.mkDirFileSync(dest); // 修复mac上文件路径无法创建的问题（没找到原因）
             return gulp.dest(dest);
         }else{
             console.log('\n----------------Error-------------------------');
