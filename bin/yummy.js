@@ -77,9 +77,7 @@ runPreCMD(function(){
 	// 更新
 	if(program.update){
 		console.log('\n!@#$%^&*-----update Yummy-----');
-		runPreCMD(function(){
-			installPlugins(globalPlugins[versionAttr], localPlugins[versionAttr]);
-		});
+		installPlugins(globalPlugins[versionAttr], localPlugins[versionAttr]);
 		return;
 	}
 
