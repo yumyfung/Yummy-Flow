@@ -170,7 +170,7 @@ var start_process = function (child_process, indexFile) {
           $('.root_text').val(message.root_mediastyle);
           $('.myselect__inner').html('');
           var myselectStr = '';
-          for(var i = 0, len = message.root_mediastyle_selection.length; i < len; i++){
+          for(var i = 0, len = (message.root_mediastyle_selection||[]).length; i < len; i++){
             myselectStr += '<li class="myselect__item">\
                                     <p class="myselect__value" title="'+ message.root_mediastyle_selection[i] +'">'+ message.root_mediastyle_selection[i] +'</p>\
                                     <a class="myselect__btn_delect" data-dir="'+ message.root_mediastyle_selection[i] +'" title="删除这个目录" href="#">delete</a>\
