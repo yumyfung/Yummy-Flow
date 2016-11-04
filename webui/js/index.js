@@ -552,7 +552,7 @@ function domInit(cp){
         for(var i = 0, len = selectVals.length; i < len; i++){
           selectValArr.push(selectVals.eq(i).text());
         }
-        if(selectValArr.join('') != initData.root_mediastyle_selection.join('')){
+        if(selectValArr.join('') != (initData.root_mediastyle_selection||[]).join('')){
           cp.send({action: 'command', code: task['config'], name: '修改站点根目录分类', command: 'gulp ' + task['config'] + ' -s root_mediastyle_selection=' + JSON.stringify(selectValArr)});
         }
         $this.find('.mod_layer_anim').removeClass('play');
@@ -659,6 +659,7 @@ function domInit(cp){
           var sshUser = $('#server_layer .server_ssh__user .mod_flex_layout__text').attr('required','required').val().trim();
           var sshPwd = $('#server_layer .server_ssh__pwd .mod_flex_layout__text').attr('required','required').val().trim();
           var sshPath = $('#server_layer .server_ssh__path .mod_flex_layout__text').attr('required','required').val().trim();
+          if(!server.ssh) server.ssh = {};
           wayDataNoChange = (sshHost==server.ssh.host&&sshPort==server.ssh.port&&sshUser==server.ssh.username&&sshPwd==server.ssh.password&&sshPath==server.ssh.path);
           wayCmd += ',ssh=host:' + sshHost +'&port:' + sshPort + '&username:' + sshUser + '&password:' + sshPwd + '&path:' + sshPath;
         }
