@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover" />
+    <title>example</title>
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="Content-Language" content="zh-cn" />
+    <meta name="Copyright" content="Tencent" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="applicable-device" content="mobile">
+    <link rel="stylesheet" href="index.css" />
+</head>
+<body class="bodybox">
+
+<div class="wrap" id="wrap">
+
+    <div class="item item-1">
+        <div class="box">
+            <h1>this is item-1</h1>
+        </div>
+    </div>
+
+    <div class="item item-2">
+        <div class="box">
+            <h1>this is item-2</h1>
+        </div>
+    </div>
+
+    <div class="item item-3">
+        <div class="box">
+            <h1>this is item-3</h1>
+        </div>
+    </div>
+
+    <div class="item item-4">
+        <div class="box">
+            <h1>this is item-4</h1>
+        </div>
+    </div>
+
+    <div class="item item-5">
+        <div class="box">
+            <h1>this is item-5</h1>
+        </div>
+    </div>
+
+</div>
+
+<div class="mod_loading" id="loading" style="display:none">
+    <div class="content">
+        <div class="progress"><span id="progress_bg" style="width:0;"></span></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<div class="mod_function_wrap">
+    <a class="mod_function_item btn_share" href="#">分享</a>
+    <a class="mod_function_item voice_play voice_pause" href="#">声音</a>
+    <div class="slider"><span></span></div>
+</div>
+
+<script src="http://imgcache.gtimg.cn/music/h5/lib/js/module/iSlider-1.0.min.js?_bid=363&max_age=2592000"></script>
+<script>
+
+window.onload = function(){
+    var myslider=new iSlider({
+        wrap:'#wrap',
+        item:'.item',
+        isVertical: true, 
+        lastLocate: false,  
+        loadingImgs: [],  
+        onslide:function (index) {
+
+        }
+    });
+    console.info(myslider)
+}
+
+</script>
+</body>
+</html>
