@@ -33,9 +33,10 @@ npm i -g yarn
 安装Yummy-Flow
 
 ```
-yarn add yummy-flow
+yarn add yummy-flow --ignore-engines
 
 ```
+
 
 ## 启动
 
@@ -104,5 +105,16 @@ n stable
 
 答：两种方式都可以使用，甚至可以混合使用，取决于个人喜好，可视化操作是建立在命令操作方式之上的，相对会更加完善，具有方便性，一般情况下效率也更高效一些，但命令操作方式非常的适合基于文件夹维度的项目需求来使用，效率更高，而且命令行中有些挺好用的命令任务并没有完全迁移到界面中去，在命令中使用还是蛮不错的。
 
+3、问：报错如下怎呀处理？
+
+```
+
+error pngjs@0.4.0: The engine "node" is incompatible with this module. Expected version "0.8.x".
+error Found incompatible module
+info Visit https://yarnpkg.com/en/docs/cli/add for documentation about this command.
+
+```
+
+答：在命令后加--ignore-engines参数
 
 [更多内容查看使用教程](http://yumyfung.github.io/yummy.github.io/)
