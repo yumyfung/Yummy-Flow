@@ -1,0 +1,65 @@
+{
+    "servers": [
+        {
+            "name": "服务器A",
+            "cmd": "u233",
+            "way": "SERVER_WAY_SSH",
+            "dir": "E:/DIR",
+            "ssh": {
+                "host": "your IP",
+                "port": "your port",
+                "username": "your username",
+                "password": "your password",
+                "path": "your site path"
+            },
+            "format": [
+                ".css",
+                ".png",
+                ".jpg",
+                ".gif",
+                ".js",
+                ".swf",
+                ".svg",
+                ".html",
+                ".ttf",
+                ".zip",
+                ".mp4",
+                ".eot",
+                ".json"
+            ],
+            "ars": "/data/dir",
+            "site": "//example.com/mediastyle",
+            "serverId": 0
+        }
+    ],
+    "root_html": "E:/DIR/html",
+    "root_mediastyle": "E:/DIR/mediastyle",
+    "root_mediastyle_selection": [
+        "E:/DIR/mediastyle",
+        "E:/DIR/source"
+    ],
+    "task": {
+        "add": "add",
+        "del": "delete",
+        "set": "set",
+        "jobs": "jobs",
+        "hosts": "hosts",
+        "minifyImg": "minifyImg",
+        "minifyCss": "minifyCss",
+        "sprite": "sprite",
+        "ars": "ars",
+        "current": "current",
+        "open": "open",
+        "update": "update"
+    },
+    "localServer": [
+        {
+            "state": true,
+            "name": "默认本地服务器名字",
+            "dir": "E:/DIR",
+            "host": "127.0.0.1",
+            "port": "10086"
+        }
+    ],
+    "hostsUse": true
+}

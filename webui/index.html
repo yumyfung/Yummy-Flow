@@ -32,7 +32,7 @@
                                 <label class="main_nav" href="#">
                                     <p><input type="radio" class="base_server" name="radio__base"/><span>服务器</span></p>
                                 </label>
-                                
+
                             </li>
                             <li class="main_li">
                                 <label class="main_nav" href="#">
@@ -75,6 +75,14 @@
                                     </p>
                                 </label>
                             </li>
+                            <li class="main_li">
+                                <label for="radio_less_complete" class="main_nav" href="#">
+                                    <p>
+                                        <input type="radio" name="radio__base" data-id="radio_less_complete" id="radio_less_complete"/>
+                                        <span>less编译</span>
+                                    </p>
+                                </label>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -96,6 +104,11 @@
                                 <input type="checkbox" checked class="stamp" id="stamp"/>
                                 <label for="stamp">md5戳</label>
                             </li>
+                            <li id="imagerename_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="imagerename" id="imagerename"/>
+                                <label for="imagerename">图片重命名</label>
+                            </li>
                             <li id="absolute_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="absolute" id="absolute"/>
@@ -115,6 +128,11 @@
                                 <i class="line"></i>
                                 <input type="checkbox" class="png8" id="png8"/>
                                 <label for="png8">png8(α)</label>
+                            </li>
+                            <li id="less_fun">
+                                <i class="line"></i>
+                                <input type="checkbox" class="less" id="less"/>
+                                <label for="less">less编译</label>
                             </li>
                         </ul>
                     </div>
@@ -288,7 +306,7 @@
                 </p>
                 <p class="mod_flex_layout__row tpl_mediastyle">
                     <label>样式文件夹命名：</label>
-                    <input type="text" placeholder="填写样式文件夹名字" class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="填写样式文件夹名字" class="mod_flex_layout__text"/>
                 </p>
                 <p class="mod_flex_layout__row mod_layer_btn__group">
                     <a class="mod_layer_btn" href="###">确定</a>
@@ -308,7 +326,7 @@
                 </p>
                 <p class="mod_flex_layout__row server_cmd">
                     <label>执行命令：</label>
-                    <input type="text" placeholder="使用命令执行时的任务名字" required class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="使用命令执行时的任务名字" required class="mod_flex_layout__text"/>
                 </p>
                 <div class="server_way">
                     <label>映射方式：<select class="mod_select" id="server_way__select">
@@ -318,44 +336,44 @@
                     <div class="server_way__inner" id="SERVER_WAY_DIR">
                         <p class="mod_flex_layout__row server_dir">
                             <label>映射路径：</label>
-                            <input type="text" required placeholder="服务器映射在本地的路径" class="mod_flex_layout__text"/> 
+                            <input type="text" required placeholder="服务器映射在本地的路径" class="mod_flex_layout__text"/>
                             <a class="mod_flex_layout__btn mod_choose_dir" href="javascript:void(0);">选择目录</a>
                         </p>
                     </div>
                     <div class="server_way__inner server_ssh" id="SERVER_WAY_SSH" style="display:none">
                         <p class="mod_flex_layout__row server_ssh__host">
                             <label>ssh主机：</label>
-                            <input type="text" required placeholder="映射ssh主机" class="mod_flex_layout__text"/> 
+                            <input type="text" required placeholder="映射ssh主机" class="mod_flex_layout__text"/>
                         </p>
                         <p class="mod_flex_layout__row server_ssh__port">
                             <label>ssh端口：</label>
-                            <input type="text" required placeholder="映射ssh端口" class="mod_flex_layout__text"/> 
+                            <input type="text" required placeholder="映射ssh端口" class="mod_flex_layout__text"/>
                         </p>
                         <p class="mod_flex_layout__row server_ssh__user">
                             <label>ssh用户：</label>
-                            <input type="text" required placeholder="映射ssh用户" class="mod_flex_layout__text"/> 
+                            <input type="text" required placeholder="映射ssh用户" class="mod_flex_layout__text"/>
                         </p>
                         <p class="mod_flex_layout__row server_ssh__pwd">
                             <label>ssh密码：</label>
-                            <input type="password" required placeholder="映射ssh密码" class="mod_flex_layout__text"/> 
+                            <input type="password" required placeholder="映射ssh密码" class="mod_flex_layout__text"/>
                         </p>
                         <p class="mod_flex_layout__row server_ssh__path">
                             <label>ssh路径：</label>
-                            <input type="text" required placeholder="映射ssh路径" class="mod_flex_layout__text"/> 
+                            <input type="text" required placeholder="映射ssh路径" class="mod_flex_layout__text"/>
                         </p>
                     </div>
                 </div>
                 <p class="mod_flex_layout__row server_format">
                     <label>允许格式：</label>
-                    <input type="text" placeholder="填写允许上传到的格式，用 , 隔开" required class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="填写允许上传到的格式，用 , 隔开" required class="mod_flex_layout__text"/>
                 </p>
                 <p class="mod_flex_layout__row server_ars">
                     <label>提单前缀：</label>
-                    <input type="text" placeholder="填写服务器对应的提单前缀" class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="填写服务器对应的提单前缀" class="mod_flex_layout__text"/>
                 </p>
                 <p class="mod_flex_layout__row server_site">
                     <label>外网地址：</label>
-                    <input type="text" placeholder="填写服务器的外网访问链接地址" class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="填写服务器的外网访问链接地址" class="mod_flex_layout__text"/>
                 </p>
                 <p class="mod_flex_layout__row mod_layer_btn__group">
                     <a class="mod_layer_btn" href="###">保存</a>
@@ -376,16 +394,16 @@
                 </p>
                 <p class="mod_flex_layout__row local_server_dir">
                     <label>映射路径：</label>
-                    <input type="text" required placeholder="填写服务器映射在本地的路径" class="mod_flex_layout__text"/> 
+                    <input type="text" required placeholder="填写服务器映射在本地的路径" class="mod_flex_layout__text"/>
                     <a class="mod_flex_layout__btn mod_choose_dir" href="javascript:void(0);">选择目录</a>
                 </p>
                 <p class="mod_flex_layout__row local_server_host">
                     <label>主机host：</label>
-                    <input type="text" placeholder="填写主机host" required class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="填写主机host" required class="mod_flex_layout__text"/>
                 </p>
                 <p class="mod_flex_layout__row local_server_port">
                     <label>主机端口：</label>
-                    <input type="text" placeholder="填写端口" required class="mod_flex_layout__text"/> 
+                    <input type="text" placeholder="填写端口" required class="mod_flex_layout__text"/>
                 </p>
                 <p class="mod_flex_layout__row mod_layer_btn__group">
                     <a class="mod_layer_btn" href="###">保存</a>
@@ -438,3 +456,6 @@
 
 </body>
 </html>
+
+
+

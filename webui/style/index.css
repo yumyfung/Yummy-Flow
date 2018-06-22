@@ -50,8 +50,8 @@ em {color: #f28c48; }
 .sidebar {position: relative;width: 200px;background: #3f3c54}
 .logo_box {height: 122px;line-height: 122px;text-align: center;background: #1dc892;font-size: 20px;color: #fff;}
 .main_menu {display: flex;height: 60px;align-items: center;text-align: center;background: #332f4a}
-.main_menu_content {margin-top: 10px;}
-.main_menu .menu_item {display: flex;height: 100%;align-items: center;justify-content: center;flex: 1;center;cursor: pointer;color: #6e6c7b}
+.main_menu_content {margin:10px 0;max-height:380px;overflow-y:auto;}
+.main_menu .menu_item {display: flex;height: 100%;align-items: center;justify-content: center;flex: 1;cursor: pointer;color: #6e6c7b}
 .main_menu .menu_item i {display: inline-block;margin-right: 5px;}
 .main_menu .menu_item_flow i {width: 20px;height: 18px;background: url(img/flow.png) no-repeat;vertical-align: -4px;}
 .main_menu .menu_item_flow.current i {background: url(img/flow_hover.png) no-repeat;}

@@ -1,7 +1,7 @@
-﻿var child_process = require('child_process'); 
+﻿var child_process = require('child_process');
 var path = require('path');
 var win = require('remote').getCurrentWindow();
-var dialog = require('remote').require('dialog'); 
+var dialog = require('remote').require('dialog');
 var clipboard = require('remote').require('clipboard');
 //var app = require('remote').require('app');
 
@@ -15,7 +15,7 @@ var hostsJson = null;
 
 // UI上Shell命令缓存管理器
 var globalShellCommand = {
-  cmd: [], 
+  cmd: [],
   key: 0,
   add: function(cmd){
     this.cmd.push(cmd);
@@ -71,6 +71,14 @@ var menuLib = {
       rules: ['.html'],
       child: [],
       tips: '请把HTML拖到这里合并引入的页面'
+    },
+    radio_less_complete: {
+      type: 'tools',
+      who: 'less编译',
+      F5: null,
+      rules: ['.less'],
+      child: [],
+      tips: '请把less文件拖到这里进行编译'
     }
   },
   // 过滤合法文件
@@ -153,13 +161,13 @@ var menuLib = {
   }
 };
 
-var start_process = function (child_process, indexFile) { 
+var start_process = function (child_process, indexFile) {
     // 生成子进程
-    var cp = child_process.fork(indexFile); 
+    var cp = child_process.fork(indexFile);
     // 初始化数据
     cp.send({action: 'init_data'});
     // domInit是否已经执行，防止多次初始化数据时domInit函数多次执行
-    var domIsInit = false; 
+    var domIsInit = false;
 
     cp.on('message', function(message){
       switch(message.action){
@@ -230,7 +238,7 @@ var start_process = function (child_process, indexFile) {
               who: server.name,
               F5: null,
               rules: server.format,
-              child: ['#sync_fun', '#guanglian_fun','#stamp_fun', '#absolute_fun', '#cssrename_fun', '#folder_fun', '#png8_fun'],
+              child: ['#sync_fun', '#guanglian_fun','#stamp_fun','#imagerename_fun','#absolute_fun', '#cssrename_fun', '#folder_fun', '#png8_fun', '#less_fun'],
               tips: '请把文件拖到这里上传到' + server.name
             };
           };
@@ -276,7 +284,7 @@ var start_process = function (child_process, indexFile) {
             cp.send({action: 'command', code: task['localServer'], command: 'gulp ' + task['localServer'] + ' -w run -a'});
             //检查是否有新版本
             cp.send({action: 'command', code: task['update'], name: '检查是否有新版本', command: 'gulp ' + task['update'] + ' -t'});
-            domIsInit = true; 
+            domIsInit = true;
             domInit(cp);
           }
           break;
@@ -392,17 +400,17 @@ var start_process = function (child_process, indexFile) {
         globalCpCallback[message.callback]();
       }
       // 滚动条滑动到底部
-      $('#holder').animate({scrollTop: holder.scrollHeight}, 600); 
+      $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
     });
 
-    cp.on('exit', function() { 
+    cp.on('exit', function() {
       menuLib.print(['系统遇到错误...','正在重启程序...']);
       win.reload(); //重新加载页面
-      start_process(child_process, indexFile); 
-    }) 
-} 
+      start_process(child_process, indexFile);
+    })
+}
 
-start_process(child_process, 'gulpfile.js'); 
+start_process(child_process, 'gulpfile.js');
 
 function domInit(cp){
 
@@ -442,16 +450,16 @@ function domInit(cp){
 
     globalCpCallback['callback_init_sidebar'] = initSidebar;
     globalCpCallback['callback_init_data'] = function(){
-      cp.send({action: 'init_data'}); 
+      cp.send({action: 'init_data'});
     }
     globalCpCallback['callback_init_data_sidebar'] = function(){
-      cp.send({action: 'init_data', callback: 'callback_init_sidebar'}); 
+      cp.send({action: 'init_data', callback: 'callback_init_sidebar'});
     }
 
     // 改变左侧任务时
     $('.sidebar_item').on('change', 'input:radio[name="radio__base"]', function(){
         initSidebar(this);
-    }); 
+    });
 
     // main_menu切换
     $('.main_menu .menu_item').click(function(){
@@ -503,7 +511,7 @@ function domInit(cp){
               });
             }
             break;
-          
+
           default:
             checkedStyle(that);
       }
@@ -559,17 +567,17 @@ function domInit(cp){
         setTimeout(function(){
             $this.hide();
         }, 800);
-        e.stopPropagation();  //阻止事件向上冒泡 
+        e.stopPropagation();  //阻止事件向上冒泡
     });
 
     $('#dir_config_layer .mod_layer_anim').click(function(e){
-      e.stopPropagation();  //阻止事件向上冒泡 
+      e.stopPropagation();  //阻止事件向上冒泡
     });
 
     // 打开配置面板
     $('.btn_config').click(function(){
       //重新初始化一下数据，可能已经修改
-      cp.send({action: 'init_data', callback: 'callback_init_sidebar'}); 
+      cp.send({action: 'init_data', callback: 'callback_init_sidebar'});
       $('#dir_config_layer').show(10, function(){
         $('#dir_config_layer .mod_layer_anim').addClass('play');
       });
@@ -804,7 +812,7 @@ function domInit(cp){
         $(this).find('input[type=checkbox]').attr('checked', true);
         cp.send({action: 'command', code: task['localServer'], name: '启动本地服务器 => ', command: 'gulp ' + task['localServer'] + ' -w run -i ' + id, callback: 'callback_init_data'});
       }
-      
+
     });
 
     // 添加hosts
@@ -1039,7 +1047,7 @@ function domInit(cp){
             function _uploadServer(){
               var cmd = 'gulp ui_upload_server -i ' + serverId + ' -f "' + result.join(',') + '"';
               var output = (function(){
-                if(globalServers[serverId].way == 'SERVER_WAY_SSH' && globalServers[serverId].ssh) 
+                if(globalServers[serverId].way == 'SERVER_WAY_SSH' && globalServers[serverId].ssh)
                   return globalServers[serverId].ssh.path || null;
                 return globalServers[serverId].dir || null;
               })();
@@ -1060,11 +1068,17 @@ function domInit(cp){
               if($('#stamp').attr('checked')){
                 cmd += ' -m';
               }
+              if($('#imagerename').attr('checked')){
+                cmd += ' -v';
+              }
               if($('#absolute').attr('checked')){
                 cmd += ' -a';
               }
               if($('#png8').attr('checked')){
                 cmd += ' -p';
+              }
+              if($('#less_fun').attr('checked')){
+                cmd += ' -l';
               }
               menuLib.print(menuId, result);
               cp.send({action: 'command', code: 'ui_upload_server', name: globalServers[serverId].name, command: cmd});
@@ -1075,7 +1089,7 @@ function domInit(cp){
               $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
               menuLib.showTaskWaitingTips();
             };
-            
+
             menuLib.hash[menuId].F5 = function(){
                _uploadServer();
             }
@@ -1128,6 +1142,18 @@ function domInit(cp){
                 menuLib.print(menuId, result);
                 var cmd = 'gulp ' + task['htmlInclude'] +' -f "' + result.join(',') + '"';
                 cp.send({action: 'command', code: task['htmlInclude'], name: 'HTML模板化合并', command: cmd});
+                $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
+                menuLib.showTaskWaitingTips();
+              };
+              menuLib.hash[menuId].F5();
+              break;
+
+            case 'radio_less_complete':
+              menuLib.hash[menuId].F5 = function(){
+                var output = path.join(path.dirname(files[0].path), 'less');
+                menuLib.print(menuId, result);
+                var cmd = 'gulp ' + task['less'] +' -f "' + result.join(',') + '" -o ' + output;
+                cp.send({action: 'command', code: task['less'], name: 'less编译', command: cmd});
                 $('#holder').animate({scrollTop: holder.scrollHeight}, 600);
                 menuLib.showTaskWaitingTips();
               };

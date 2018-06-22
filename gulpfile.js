@@ -1,11 +1,9 @@
 ﻿/*============================================================
-      @作者：yumyfeng
-      @说明：Yummy 新一代跨平台的前端构建工具
-      @版本：V2.1.0
-      @最后编辑：$Author:: yumyfeng       $
-                 $Date:: 2016-10-24 18:06:05#$
+      @作者：yumyfung
+      @说明：Yummy-Flow 新一代跨平台的前端构建工具
+      @版本：V0.0.1
 =============================================================*/
-console.log('\nPlease waiting...\n');
+console.log('\nPlease waiting Yummy-Flow start...\n');
 var gulp = require('gulp');
 var fs = require('fs');
 var path = require('path');
@@ -14,7 +12,7 @@ var gutil = require('gulp-util');
 var argv = require('yargs').argv;
 var minifyCSS = require('gulp-minify-css');
 var rename = require('gulp-rename');
-var changed = require('gulp-changed'); 
+var changed = require('gulp-changed');
 var cssimport = require('gulp-cssimport');
 var tap = require('gulp-tap');
 var spritesmith = require('gulp.spritesmith');
@@ -36,7 +34,29 @@ var grepContents = require('gulp-grep-contents');
 // var autoprefixer = require('gulp-autoprefixer');
 var stripCssComments = require('gulp-strip-css-comments');
 var GulpSSH = require('gulp-ssh');
+var less = require('gulp-less');
+var rev = require('gulp-rev');
+var revReplace = require('gulp-rev-replace');
+var hash = require('gulp-hash-list');
+var revision = require('gulp-asset-revision');
+var save = require('gulp-save');
+var merge = require('gulp-merge-json');
+var rm = require( 'gulp-rm');
 
+var jsonConcat = require('gulp-json-concat');
+var concat_json = require("gulp-concat-json");
+
+gulp.task('hash', function() {
+    return gulp.src(['E:/SvnProject/qGulp/test/*.css'])
+        .pipe(hash({
+            "template": "{name}_{hash}{ext}?max_age=2592000&md5={hash}"
+        }))
+        .pipe(save('before-servertt-dest')) //cache all files here
+        .pipe(gulp.dest('E:/SvnProject/qGulp/test/dist'))
+        .pipe(save.restore('before-servertt-dest')) //restore all files to the state when we cached them
+        .pipe(hash.manifest('assets.json'))
+        .pipe(gulp.dest('E:/SvnProject/qGulp/test/manifest'));
+});
 
 //工具扩展类
 function Tools(){}
@@ -60,8 +80,8 @@ Tools.deepClone = Tools.prototype.deepClone = function(obj){
         newobj = JSON.parse(str); //还原
     } else {
         for(var i in obj){
-            newobj[i] = typeof obj[i] === 'object' ? 
-            arguments.callee(obj[i]) : obj[i]; 
+            newobj[i] = typeof obj[i] === 'object' ?
+            arguments.callee(obj[i]) : obj[i];
         }
     }
     return newobj;
@@ -90,14 +110,14 @@ Tools.dest = Tools.prototype.dest = function(dest){
         process.send({action: 'debug', data: 'Error：' + e.message});
         process.send({action: 'debug', data: '出错提示：发布路径遇到错误，请检查映射盘是否存在或者网络是否中断。'});
     }
-    
+
 };
 
 //广度文件夹遍历
 Tools.walk = Tools.prototype.walk = function(walkPath, format, callback){
     var dirList = fs.readdirSync(walkPath);
     var fileList = [];
-   
+
     dirList.forEach(function(item){
       if(fs.statSync(walkPath + '/' + item).isFile()){
         if(format.contains(path.extname(item))){
@@ -105,7 +125,7 @@ Tools.walk = Tools.prototype.walk = function(walkPath, format, callback){
         }
       }
     });
-   
+
     callback(fileList, walkPath);
 
     dirList.forEach(function(item){
@@ -176,28 +196,28 @@ TimeCount.prototype.timeEnd = function(label) {
   return duration;
 };
 
-// 对Date的扩展，将 Date 转化为指定格式的String   
-// 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，   
-// 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)   
-// 例子：   
-// (new Date()).format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423   
+// 对Date的扩展，将 Date 转化为指定格式的String
+// 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，
+// 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
+// 例子：
+// (new Date()).format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423
 // (new Date()).format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
-Date.prototype.format = function(fmt){ 
-  var o = {   
-    "M+" : this.getMonth()+1,                 //月份   
-    "d+" : this.getDate(),                    //日   
-    "h+" : this.getHours(),                   //小时   
-    "m+" : this.getMinutes(),                 //分   
-    "s+" : this.getSeconds(),                 //秒   
-    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
-    "S"  : this.getMilliseconds()             //毫秒   
-  };   
-  if(/(y+)/.test(fmt))   
-    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
-  for(var k in o)   
-    if(new RegExp("("+ k +")").test(fmt))   
-  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
-  return fmt;   
+Date.prototype.format = function(fmt){
+  var o = {
+    "M+" : this.getMonth()+1,                 //月份
+    "d+" : this.getDate(),                    //日
+    "h+" : this.getHours(),                   //小时
+    "m+" : this.getMinutes(),                 //分
+    "s+" : this.getSeconds(),                 //秒
+    "q+" : Math.floor((this.getMonth()+3)/3), //季度
+    "S"  : this.getMilliseconds()             //毫秒
+  };
+  if(/(y+)/.test(fmt))
+    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+  for(var k in o)
+    if(new RegExp("("+ k +")").test(fmt))
+  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+  return fmt;
 }
 
 //基础参数配置
@@ -232,7 +252,8 @@ var config = {
         hosts: 'hosts',
         update: 'update',
         localServer: 'localserver',
-        htmlInclude: 'htmlinclude'
+        htmlInclude: 'htmlinclude',
+        less: 'less'
     },
     template: {},
     //命令任务对应表
@@ -288,7 +309,7 @@ var config = {
             flagWrite = true;
         }
         this.root_mediastyle = baseJson.root_mediastyle + '/';
-        // 基础命令 
+        // 基础命令
         if(!baseJson.task){
             baseJson.task = {
                 add: "add",
@@ -381,7 +402,7 @@ var config = {
             gulp.task(rule.command, taskTemplate(argv, tpl));
             config.taskFun[rule.command] = taskTemplate;
          }
-       }); 
+       });
     },
     // 自定义功能模块初始化
     initExtend: function(extendPath){
@@ -447,7 +468,7 @@ var Common = {
     defaultImgFiles: [],
     defaultHtmlFiles: [],
     init: function(argv, server){
-        //如果是指定文件上传，只会上传指定的文件，并且文件不受项目约束 
+        //如果是指定文件上传，只会上传指定的文件，并且文件不受项目约束
         //非指定文件上传，会将项目下需要的文件全部上传
         Common.server = server;
         var allFiles = [];
@@ -497,18 +518,17 @@ var Common = {
             var regGl = new RegExp(glStr, 'gi');
         }
         var changedDir = dir + config.dir_local_css.replace(config.root_mediastyle, '');
+
         gulp.src(cssSrc, {base: path.normalize(config.root_mediastyle)})
+            .pipe(gulpif(!!argv.l, less()))
             .pipe(gulpif(!!argv.g, grepContents(regGl)))
             .pipe(gulpif(!!argv.c, rename({'suffix': argv.c}))) //重命名样式文件
+            .pipe(gulpif(!!argv.v, revReplace({manifest:gulp.src(that.cssFilePath + 'rev-manifest.json')})))
             .pipe(gulpif(!!argv.u && !argv.f , changed(changedDir)))
             .pipe(stripCssComments())
             .pipe(cssimport({extensions: ["!less", "!sass"]}))
-            // .pipe(autoprefixer({
-            //     browsers: ['ie > 7', 'ios > 6', 'Firefox <= 20', '> 5%'],
-            //     cascade: false
-            // }))
             .pipe(tobase64({
-                    maxsize: 8,        
+                    maxsize: 8,
                     ignore: /(?!.*\bbase64\b)^.*$/g
                 }
             ))
@@ -565,10 +585,10 @@ var Common = {
         var changedDir = dir + config.dir_local_css.replace(config.root_mediastyle, '');
         function uploadImg(key){
             var imageminParamObj = {
-                quality: '65-80', 
-                optimizationLevel: 3, 
-                progressive: true, 
-                interlaced: true , 
+                quality: '65-80',
+                optimizationLevel: 3,
+                progressive: true,
+                interlaced: true ,
                 svgoPlugins: [{removeViewBox: false}]
             };
             if(argv.p){
@@ -587,7 +607,13 @@ var Common = {
                     }
                 }));
         }
-        uploadImg(0);
+        gulp.src(that.imgFiles)
+        .pipe(rev())
+        .pipe(rev.arsPath())
+        .pipe(gulp.dest(that.cssFilePath))
+        .pipe(next(function(){
+            uploadImg(0);
+        }))
     },
     //上传html
     uploadHtml: function(argv, server, cb){
@@ -796,7 +822,7 @@ function taskServer(argv, taskCallback){
                     obj[arr2[0]] = arr2[1];
                 }
                 // config.servers与config.baseJson.servers指向相同对象
-                config.baseJson.servers.push(obj);  
+                config.baseJson.servers.push(obj);
                 break;
             case 'update':
                 var arr = argv.d.split(',');
@@ -1009,7 +1035,7 @@ function taskHosts(argv, taskCallback){
                 case 's':
                     var sArr = argv.s.split(',');
                     if(sArr.length == 1){
-                       hosts.activeGroup(sArr[0]); 
+                       hosts.activeGroup(sArr[0]);
                        console.log('已启用hosts组 => ' + sArr[0]);
                     }else if(sArr.length == 3){
                        hosts.active(sArr[2], sArr[1], sArr[0]);
@@ -1020,7 +1046,7 @@ function taskHosts(argv, taskCallback){
                 case 'f':
                     var fArr = argv.f.split(',');
                     if(fArr.length == 1){
-                       hosts.disableGroup(fArr[0]); 
+                       hosts.disableGroup(fArr[0]);
                        console.log('已注释hosts组 => ' + fArr[0]);
                     }else if(fArr.length == 3){
                        hosts.disable(fArr[2], fArr[1], fArr[0]);
@@ -1038,7 +1064,7 @@ function taskHosts(argv, taskCallback){
     }
 }
 
-// 本地服务器搭建 
+// 本地服务器搭建
 // gulp localserver -w add -n 本地服务器名字 -d "E:/SvnProject" -h 127.0.0.1 -p 10086
 // gulp localserver -w update -i 0 -n 本地服务器名字 -d "E:/SvnProject" -h 127.0.0.1 -p 10086
 // gulp localserver -w delete -i 0
@@ -1058,7 +1084,7 @@ function taskLocalServer(argv, taskCallback){
                 obj['dir'] = argv.d;
                 obj['host'] = argv.h;
                 obj['port'] = argv.p;
-                config.baseJson.localServer.push(obj);  
+                config.baseJson.localServer.push(obj);
                 break;
 
             case 'update':
@@ -1142,10 +1168,10 @@ function taskMinifyImg(argv, taskCallback){
             output = argv.o;
         }
         var imageminParamObj = {
-            quality: '65-80', 
-            optimizationLevel: 3, 
-            progressive: true, 
-            interlaced: true , 
+            quality: '65-80',
+            optimizationLevel: 3,
+            progressive: true,
+            interlaced: true ,
             svgoPlugins: [{removeViewBox: false}]
         };
         if(argv.p){
@@ -1182,7 +1208,7 @@ function taskMinifyCss(argv, taskCallback){
             //     cascade: false
             // }))
             .pipe(tobase64({
-                    maxsize: 8,        
+                    maxsize: 8,
                     ignore: /(?!.*\bbase64\b)^.*$/g
                 }
             ))
@@ -1191,7 +1217,12 @@ function taskMinifyCss(argv, taskCallback){
                 compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                 keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
             }))
+            .pipe(hash({
+                "template": "{name}_{hash}{ext}?max_age=2592000&md5={hash}"
+            }))
             .pipe(Tools.dest(output))
+            .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css.json')))
+            .pipe(gulpif(!!that.argv.v, Tools.dest(output)))
             .pipe(next(function(){
                 console.log('CSS压缩成功...');
                 if(!!taskCallback) taskCallback(['CSS压缩成功...']);
@@ -1231,11 +1262,11 @@ function taskSprite(argv, taskCallback){
         if(argv.o && typeof argv.o == 'string') {
             output = argv.o;
         }
-        
+
         var cbDataArr = [];
         //合并图片
         for(var key = 0;key <imgDirArr.length;key++){
-          (function(key){             
+          (function(key){
                 var imgFile = fileIsFixed ? 'sprite' : 'sprite_' + path.basename(imgPathArr[key]);
                 output = fileIsFixed ? output : path.normalize(path.join(output, imgFile));
                 var spriteData = gulp.src(imgDirArr[key])
@@ -1247,7 +1278,7 @@ function taskSprite(argv, taskCallback){
                         padding: 2,
                         cssVarMap: function(sprite) {
                             //替换sprite文件图片名字中的@字符，生成的类名要引用到图片中的名字，不能有@
-                            sprite.name = sprite.name.replace('@', '-');    
+                            sprite.name = sprite.name.replace('@', '-');
                             console.log('正在合并%s...', sprite.name);
                             cbDataArr.push('正在合并'+sprite.name+'...');
                         }
@@ -1259,7 +1290,7 @@ function taskSprite(argv, taskCallback){
                                 if(key == imgDirArr.length - 1){
                                     if(!!taskCallback) taskCallback(cbDataArr);
                                 }
-                            }));  
+                            }));
                     }));
           })(key);
         }
@@ -1302,6 +1333,7 @@ function uploadServer(argv, server, taskCallback){
             if(!arsArr.length){
                 arsArr = [config.dir_local_css + '/**/*.+(jpg|png|css)', '!' + config.dir_local_css + '/**/*.import.*', '!' + config.dir_local_css + '/extra/**/*', '!' + config.dir_local_css + '/slice/**/*', '!' +  config.dir_local_css + '/base64/**/*'];
             }
+
             gulp.src(arsArr)
                 .pipe(gulpif(!!argv.c, rename({'suffix': argv.c})))
                 .pipe(tap(function(file){
@@ -1309,6 +1341,8 @@ function uploadServer(argv, server, taskCallback){
                     var dirItem = path.normalize(mediastyle + file.path.split(mediastyle)[1]).replace(/\\/g, '/');
                     console.log(path.join(Common.server.ars, dirItem).replace(/\\/g,'/'));
                     fileList.push(path.join(Common.server.ars, dirItem).replace(/\\/g,'/'));
+                    console.log('arrrrrrrrrrrrrrrrrrrr');
+                    console.log(fileList);
                     fileUrl.push(path.join(Common.server.site, dirItem).replace(/\\/g,'/'));
                 })).pipe(next(function(){
                     if(!fileList.length){
@@ -1374,48 +1408,48 @@ function taskOpen(argv, taskCallback){
     }
 }
 
-//测试用例
-function taskTest(argv, taskCallback){
+//less
+function taskLess(argv, taskCallback){
     return function(){
-        gulp.src('test/*.css')
-            .pipe(tobase64({
-                    maxsize: 8,        
-                    ignore: /(?!.*\bbase64\b)^.*$/g
-                }
-            ))
-            .pipe(cssimport({extensions: ["!less", "!sass"]}))
-            .pipe(ySprite({
-                slice: 'test',
-                sprite: 'test/sprite',
-                engine: require('phantomjssmith'),
-                callback: function(stream){
-                    stream.pipe(yStamp({
-                        stamp: {
-                            md5: true,
-                            // d: (new Date()).format("yyyyMMddhhmmss"),
-                            max_age: '2592000'
-                        },
-                        callback: function(stream){
-                            stream.pipe(Tools.dest('test/result'))
-                                .pipe(next(function(){
-                                    console.log('测试运行成功...');
-                                    if(!!taskCallback) taskCallback(['测试运行OK...']);
-                                }));;
-                        }
-                    }))
-                }
-            }))
+        if(!argv.f||!argv.o){
+            console.log('-f和-o参数是必须的，请检查是否有漏掉...');
+            if(!!taskCallback) taskCallback();
+            return;
+        }
+        gulp.src(argv.f)
+        .pipe(less())
+        .pipe(Tools.dest(argv.o))
+        .pipe(next(function(){
+            console.log('less文件编译完毕...');
+            if(!!taskCallback) taskCallback(['less文件编译完毕...']);
+        }));
     }
 }
+
+//测试用例
+function taskTest(argv, taskCallback){
+
+    return function(){
+
+    }
+}
+
 
 // 升级新版本
 function taskUpdate(argv, taskCallback){
     return function(){
         var cbDataArr = [];
         var netWrongTips = false;
-        var lastVersionCheck = childProcess.exec('npm view yummy-version');
+        var lastVersionCheck = childProcess.exec('npm view Yummy-Flow');
         lastVersionCheck.stdout.on('data', function(data){
-            data = eval('(' + data + ')');
+            try{
+                data = eval('(' + data + ')');
+            }catch(e){
+                console.log('update error: ------ error: ');
+                console.log(e.message);
+                if(!!taskCallback) taskCallback();
+                return;
+            }
             var version = data.version.replace(/\r\n|\n/g, '').replace(/\s+/g, '');
             var features = data.features || [];
             var hasNewVersion = (version > JSON.parse(fs.readFileSync('./package.json', 'utf8')).version);
@@ -1424,7 +1458,7 @@ function taskUpdate(argv, taskCallback){
                 if(hasNewVersion){
                       console.log('检查到有新版本V' + version + '，需要升级可以到配置中手动更新！');
                       cbDataArr.push('检查到有新版本' + version + '，需要升级可以到配置中手动更新！');
-                      if(!!taskCallback) taskCallback(cbDataArr, -1, features);  
+                      if(!!taskCallback) taskCallback(cbDataArr, -1, features);
                   }else{
                     console.log('当前已是最新版本');
                     cbDataArr.push('当前已是最新版本');
@@ -1440,52 +1474,31 @@ function taskUpdate(argv, taskCallback){
             }
             if(!!taskCallback) taskCallback(cbDataArr, 1);  //开始更新，拉起更新界面
             try{
-                download('https://github.com/yumyfung/yummy/archive/master.zip')
-                .pipe(next(function(){
-                    console.log('正在下载更新文件...');
-                    process.send({action: 'updating', tips: '正在下载更新文件...'});
-                }))
-                .pipe(unzip())
-                .pipe(next(function(){
-                    console.log('正在解压下载文件...');
-                    process.send({action: 'updating', tips: '正在解压下载文件...'});
-                }))
-                .pipe(Tools.dest("downloads/"))
-                .pipe(next(function(){
-                    console.log('正在同步替换文件...');
-                    process.send({action: 'updating', tips: '正在同步替换文件...'});
-                }))
-                .pipe(gulpCopy('./', {prefix: 2}))
-                .pipe(next(function(){
-                    console.log('正在安装更新插件...');
-                    process.send({action: 'updating', tips: '正在安装更新插件...'});
-                    var commandStr = 'node ./bin/yummy.js update';
-                    if(/^darwin/gi.test(process.platform)){
-                        commandStr = 'sudo ' + commandStr;
+                console.log('正在安装更新...');
+                process.send({action: 'updating', tips: '正在安装更新...'});
+                var commandStr = 'yarn add Yummy-Flow@latest';
+                var command = childProcess.exec(commandStr, function(err,stdout,stderr){
+                    if(err){
+                        console.log(err);
+                        console.log('新版本升级插件失败...');
+                        cbDataArr.push('新版本升级插件失败...');
+                        if(!!taskCallback) taskCallback(cbDataArr, 0);
+                        return;
                     }
-                    var command = childProcess.exec(commandStr, function(err,stdout,stderr){
-                        if(err){
-                            console.log(err);
-                            console.log('新版本升级插件失败...');
-                            cbDataArr.push('新版本升级插件失败...');
-                            if(!!taskCallback) taskCallback(cbDataArr, 0);
-                            return;
-                        }
-                        //要关闭退出已开启的本地服务器，防止再次开户冲突
-                        config.closeLocalServer();  
-                        console.log('新版本升级完毕...');
-                        cbDataArr.push('新版本升级完毕...');
-                        if(!!taskCallback) taskCallback(cbDataArr, 2);
-                    });
-                    command.stdout.on('data', function(data){
-                        console.log(data); 
-                        process.send({action: 'updating', tips: data});
-                    });
-                    command.stderr.on('data', function(data){
-                        console.log(data);
-                        process.send({action: 'updating', tips: data}); 
-                    });
-                }));
+                    //要关闭退出已开启的本地服务器，防止再次开户冲突
+                    config.closeLocalServer();
+                    console.log('新版本升级完毕...');
+                    cbDataArr.push('新版本升级完毕...');
+                    if(!!taskCallback) taskCallback(cbDataArr, 2);
+                });
+                command.stdout.on('data', function(data){
+                    console.log(data);
+                    process.send({action: 'updating', tips: data});
+                });
+                command.stderr.on('data', function(data){
+                    console.log(data);
+                    process.send({action: 'updating', tips: data});
+                });
             }catch(e){
                 console.log('------------------Error--------------');
                 console.log('下载遇到错误，很可能是网络问题，如网络需要代理，请开启。');
@@ -1546,12 +1559,15 @@ config.taskFun[config.task.minifyCss] = taskMinifyCss;
 //基础雪碧图功能
 gulp.task(config.task.sprite, taskSprite(argv));
 config.taskFun[config.task.sprite] = taskSprite;
-//本地服务器搭建 
+//本地服务器搭建
 gulp.task(config.task.localServer, taskLocalServer(argv));
 config.taskFun[config.task.localServer] = taskLocalServer;
 //升级新版本
 gulp.task(config.task.update, taskUpdate(argv));
 config.taskFun[config.task.update] = taskUpdate;
+//less
+gulp.task(config.task.less, taskLess(argv));
+config.taskFun[config.task.less] = taskLess;
 //测试用例
 gulp.task('test', taskTest(argv));
 config.taskFun['test'] = taskTest;
@@ -1602,13 +1618,13 @@ gulp.task('default', function() {
                     loop();
                 });
                 command.stdout.on('data', function(data){
-                    console.log(data); 
+                    console.log(data);
                 });
                 command.stderr.on('data', function(data){
-                    console.log(data); 
+                    console.log(data);
                 });
             }
-        });    
+        });
     }
     //稍微延时去除gulp default讨厌的console输出
     setTimeout(function(){
@@ -1696,10 +1712,10 @@ function taskUI(){
             }
         });
         uicommand.stdout.on('data', function(data){
-            console.log(data); 
+            console.log(data);
         });
         uicommand.stderr.on('data', function(data){
-            console.log(data); 
+            console.log(data);
         });
     }
 }
@@ -1713,10 +1729,11 @@ function UIClass(argv) {
     this.imgFiles = [];
     this.htmlFiles = [];
     this.otherFiles = [];
-    this.cssBasePath = '';
+    this.cssBasePath = ''; // 样式路径
     this.cssAbsolutePath = '';
     this.guangLianArr = [];
     this.server = {};
+    this.cssFilePath = '';  // 样式路径
 }
 
 // UI初始化
@@ -1726,16 +1743,19 @@ UIClass.prototype.init = function(cb){
     var allFiles = this.argv.f.split(',');
     for(var i = 0, len = allFiles.length; i < len; i++){
         var extraname = path.extname(path.basename(allFiles[i]));
-        if(extraname == '.css'){
+        if(extraname == '.css' || extraname == '.less'){
             this.cssBasePath = path.dirname(allFiles[i]);
+            this.cssFilePath = this.cssBasePath;
             this.cssAbsolutePath = path.join(this.server.site, path.normalize(path.dirname(allFiles[i])).replace(path.normalize(config.root_mediastyle), '')).replace(/\\/g,'/');
             this.cssFiles.push(allFiles[i]);
             //检查文件关联性
             if(this.argv.g){
-                this.cssFiles = [path.join(this.cssBasePath,'**/*.css'), '!'+path.join(this.cssBasePath,'**/*.import.css')];
+                this.cssFiles = [path.join(this.cssBasePath,'**/*.*ss'), '!'+path.join(this.cssBasePath,'**/*.import.*ss')];
                 this.guangLianArr.push(path.basename(allFiles[i]));
             }
         }else if(['.jpg','.png','.gif'].contains(extraname)){
+
+            this.cssFilePath = this.cssFilePath || path.normalize(path.dirname(allFiles[i])).split(/img/g)[0].replace(/\\/g,'/');
             this.imgFiles.push(allFiles[i]);
         }else if(['.html','.htm'].contains(extraname)){
             this.htmlFiles.push(allFiles[i]);
@@ -1767,7 +1787,7 @@ UIClass.prototype.init = function(cb){
                 orderRun(that, i);
             }
             if(i == queen.length){
-                cb && typeof cb == 'function' ? cb() : '';  
+                cb && typeof cb == 'function' ? cb() : '';
             }
         });
     }
@@ -1802,17 +1822,15 @@ UIClass.prototype.uploadCss = function(cb){
         var glStr = '@import\\s+(?:url\\()?(.+(?=[\'\"\\)](?:'+that.guangLianArr.join('|')+')))(?:\\))?.*';
         var regGl = new RegExp(glStr, 'gi');
     }
+
     gulp.src(that.cssFiles, {base: path.normalize(config.root_mediastyle)})
+        .pipe(gulpif(!!that.argv.l, less()))
         .pipe(gulpif(!!that.argv.g, grepContents(regGl)))
         .pipe(gulpif(!!that.argv.c, rename({'suffix': that.argv.c})))
         .pipe(stripCssComments())
-        .pipe(cssimport({extensions: ["!less", "!sass"]}))
-        // .pipe(autoprefixer({
-        //     browsers: ['ie > 7', 'ios > 6', 'Firefox <= 20', '> 5%'],
-        //     cascade: false
-        // }))
+        .pipe(cssimport())
         .pipe(tobase64({
-                maxsize: 8,        
+                maxsize: 8,
                 ignore: /(?!.*\bbase64\b)^.*$/g
             }
         ))
@@ -1825,44 +1843,84 @@ UIClass.prototype.uploadCss = function(cb){
                 if(that.argv.a){
                   site = that.cssAbsolutePath;
                 }
+                // 可能会因为sprite产生图片
+                that.imgFiles.push(that.cssBasePath + '/sprite/*');
                 stream.pipe(yStamp({
                     stamp: stamp,
                     absolute: site,
                     callback: function(stream, backgroundImgs){
                         //需不需要把相关资源也上传
-                        var isNeedToUploadImg = !!that.imgFiles.length;
                         if(that.argv.r){
                             that.imgFiles = that.imgFiles.concat(backgroundImgs).unique();
-                            process.send({action: 'sync', arsFileArr: that.imgFiles});
+                            // process.send({action: 'sync', arsFileArr: that.imgFiles});
                         }
                         var fileList = [];
-                        stream.pipe(minifyCSS({
-                            advanced: false,//类型：Boolean 默认：true [是否开启高级优化（合并选择器等）]
-                            compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
-                            keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
-                        }))
-                        .pipe(next(function(fileListArr){
-                            fileList = fileList.concat(fileListArr);
-                        }))
-                        .pipe(Tools.dest(that.server))
-                        .pipe(next(function(){
-                            // 提单文件（其中包含了如果是检查关联性功能，这里是要在界面增加的提单文件）
-                            process.send({action: 'sync', arsFileArr: fileList});
-                            // 如果没有同步资源，有可能会因为sprite产生图片
-                            if(!that.argv.r){
-                                that.imgFiles.push(that.cssBasePath + '/sprite/*');
-                            }
-                            // 如果本来是不需要上传图片的，但具有图片时（同步资源或sprite产生）需要上传
-                            if(!isNeedToUploadImg && that.imgFiles.length){
-                                that.uploadImg(function(){
+                        gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
+                            .pipe(gulpif(!!that.argv.v, hash({
+                                "template": "{name}_{hash}{ext}?max_age=2592000"
+                            })))
+                            .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
+                            .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
+                            .pipe(gulpif(!!that.argv.v, save('before-merge-json')))
+                            .pipe(gulpif(!!that.argv.v, next(function(){
+                                //合并json
+                                gulp.src(path.join(that.cssFilePath, '*.json'))
+                                    .pipe(save('before-rm-json'))
+                                    .pipe(rm())
+                                    .pipe(save.restore('before-rm-json'))
+                                    .pipe(merge('rev-css.json'))
+                                    .pipe(gulp.dest(that.cssFilePath));
+                            })))
+                            .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
+                            .pipe(next(function(){
+                                stream.pipe(minifyCSS({
+                                    advanced: false,//类型：Boolean 默认：true [是否开启高级优化（合并选择器等）]
+                                    compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
+                                    keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
+                                }))
+                                .pipe(next(function(fileListArr){
+                                    fileList = fileList.concat(fileListArr);
+                                }))
+                                // .pipe(gulpif(!!that.argv.v, revision({
+                                //     hasSuffix: true,
+                                //     pathSuffix: /.+/gi,
+                                //     manifest: path.join(that.cssFilePath, 'rev-css.json')
+                                // })))
+                                .pipe(gulpif(!!that.argv.v, hash({
+                                    "template": "{name}_{hash}{ext}?max_age=2592000"
+                                })))
+                                .pipe(gulpif(!!that.argv.v, save('before-server-dest')))//cache all files here
+                                .pipe(Tools.dest(that.server))
+                                .pipe(gulpif(!!that.argv.v, save.restore('before-server-dest'))) //restore all files to the state when we cached them
+                                .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
+                                .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
+                                .pipe(gulpif(!!that.argv.v, save('before-merge2-json')))
+                                .pipe(gulpif(!!that.argv.v, next(function(){
+                                    //合并json
+                                    gulp.src(path.join(that.cssFilePath, '*.json'))
+                                        .pipe(save('before-rm2-json'))
+                                        .pipe(rm())
+                                        .pipe(save.restore('before-rm2-json'))
+                                        .pipe(merge('rev-css.json'))
+                                        .pipe(gulp.dest(that.cssFilePath));
+                                })))
+                                .pipe(gulpif(!!that.argv.v, save.restore('before-merge2-json')))
+                                .pipe(next(function(){
+                                    // 提单文件（其中包含了如果是检查关联性功能，这里是要在界面增加的提单文件）
+                                    process.send({action: 'sync', arsFileArr: fileList});
+                                    // 如果本来是不需要上传图片的，但具有图片时（同步资源或sprite产生）需要上传
+                                    if(that.imgFiles.length){
+                                        that.uploadImg(function(){
+                                            console.log('样式上传到完毕...');
+                                            cb && typeof cb == 'function' ? cb() : '';
+                                        }, 1);
+                                        return;
+                                    }
                                     console.log('样式上传到完毕...');
                                     cb && typeof cb == 'function' ? cb() : '';
-                                });
-                                return;
-                            } 
-                            console.log('样式上传到完毕...');
-                            cb && typeof cb == 'function' ? cb() : '';
-                        }));
+                                }));
+                            }))
+
                     }
                 }));
             }
@@ -1870,19 +1928,41 @@ UIClass.prototype.uploadCss = function(cb){
 }
 
 // UI上传图片
-UIClass.prototype.uploadImg = function(cb){
+UIClass.prototype.uploadImg = function(cb, upType){
     var that = this;
     if(!that.imgFiles.length){
         cb && typeof cb == 'function' ? cb() : '';
         return;
     }
     var fileList = [];
+
+    // 生成改名列表清单
+    //upType=1表示是从上传样式传过来的图片，在上传样式过程中已经处理生成过一次json了，不需要重复
+    if(!!that.argv.v && upType != 1){    
+        gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
+            .pipe(hash({
+                "template": "{name}_{hash}{ext}?max_age=2592000"
+            }))
+            .pipe(hash.manifest('rev-css_'+(new Date().getTime())+'.json')) //生成临时json用于后面合并
+            .pipe(gulp.dest(that.cssFilePath))
+            .pipe(next(function(){
+                //合并json
+                gulp.src(path.join(that.cssFilePath, '*.json'))
+                    .pipe(save('before-rm-json'))
+                    .pipe(rm())
+                    .pipe(save.restore('before-rm-json'))
+                    .pipe(merge('rev-css.json'))
+                    .pipe(gulp.dest(that.cssFilePath));
+            }));
+    }
+    
+    //上传
     function upImg(key){
         var imageminParamObj = {
-            quality: '65-80', 
-            optimizationLevel: 3, 
-            progressive: true, 
-            interlaced: true , 
+            quality: '65-80',
+            optimizationLevel: 3,
+            progressive: true,
+            interlaced: true ,
             svgoPlugins: [{removeViewBox: false}]
         };
         if(that.argv.p){
@@ -1893,18 +1973,49 @@ UIClass.prototype.uploadImg = function(cb){
             .pipe(next(function(fileListArr){
                 fileList = fileList.concat(fileListArr);
             }))
+            .pipe(gulpif(!!that.argv.v, hash({
+                "template": "{name}_{hash}{ext}?max_age=2592000"
+            })))
             .pipe(Tools.dest(config.servers[that.serverId]))
             .pipe(next(function(){
+                // 需要判断文件是否存在
+
                 if(++key < that.imgFiles.length){
                     upImg(key);
+
                 }else {
-                    process.send({action: 'sync', arsFileArr: fileList});
-                    console.log('图片上传到完毕...');
-                    cb && typeof cb == 'function' ? cb() : '';
+
+                    if(!!that.argv.v){
+                        fs.readFile(that.cssFilePath + '\\rev-manifest.json',function(err,data){
+                            if (err) {
+                                ars(fileList);
+                                return;
+                            }
+                            var imgRevFile = data.toString();
+                            imgRevDate = JSON.parse(imgRevFile);
+                            fileList = fileList.map(function(value){
+                                var imgfilename = path.basename(value);
+                                return imgRevDate[imgfilename] ? value.replace(imgfilename,imgRevDate[imgfilename]) : value;
+
+                            })
+                            ars(fileList);
+                        });
+                    } else {
+                        ars(fileList);
+                    }
+
+                    function ars(list){
+                        process.send({action: 'sync', arsFileArr: list});
+                        console.log('图片上传到完毕...');
+                        cb && typeof cb == 'function' ? cb() : '';
+                    };
+
                 }
             }));
     }
+
     upImg(0);
+
 }
 
 // UI上传HTML
@@ -1938,8 +2049,8 @@ UIClass.prototype.uploadHtml = function(cb){
         }));
 }
 
-//通过进程message来监听主进程传递进来的数据 
-process.on("message",function(message) { 
+//通过进程message来监听主进程传递进来的数据
+process.on("message",function(message) {
     switch(message.action){
         case 'init_data':
             process.send({
@@ -1984,16 +2095,16 @@ process.on("message",function(message) {
                     process.send({action: 'command', result: message.name + '成功......   耗时：' + timeNeed + 'ms', callback: message.callback});
                 });
                 childCmdProcess.stdout.on('data', function(data){
-                    console.log(data); 
+                    console.log(data);
                     process.send({action: 'debug', data: data});
                 });
                 childCmdProcess.stderr.on('data', function(data){
-                    console.log(data); 
+                    console.log(data);
                     process.send({action: 'debug', data: data});
                 });
             }
     }
-    
+
 });
 
 

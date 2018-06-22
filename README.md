@@ -1,52 +1,50 @@
-# Yummy
+# Yummy-Flow
 
-Yummy就是一个基于nodejs和gulp来开发的前端自动化流程工具，它将前端开发人员常用的样式压缩、图片压缩、合并和上传等一系列繁杂的工作整合起来，提供智能一条龙服务，能够用于辅助团队规范开发，提高团队的工作效率。
+Yummy-Flow就是一个基于nodejs和gulp来开发的前端自动化流程工具，它将前端开发人员常用的样式压缩、图片压缩、合并和上传等一系列繁杂的工作整合起来，提供智能一条龙服务，能够用于辅助团队规范开发，提高团队的工作效率。
 
-## 安装
+## 安装依赖环境（如已安装请忽略此步骤）
 
-方式一：全局安装
+请先确保你的电脑环境安装了Git、BuildTools_Full(C++编译工具和Python)，没有的话可以执行下面的命令安装
 
-```
-npm install yummy-yummy -g
-
-yummy install
+安装BuildTools
 
 ```
-方式二：本地安装
+npm i -g build-tools --registry=https://registry.npm.taobao.org
 
 ```
-npm install yummy-yummy --save-dev
+安装Git，Windows下自行下载安装，MacOS下可用以下命令
 
-npm link
-
-yummy install
+```
+brew install git
 
 ```
 
-[查看使用教程](http://yumyfung.github.io/yummy.github.io/)
+配置Git和Python到环境变量，可输入命令git --version和python --version分别查看是否安装成功，成功后请重新打开命令窗口执行接下来的步骤。
 
-## 更新
+## 安装Yummy-Flow
 
-方式一：传统命令更新（稍复杂，所有版本适用）
-
-先从github上更新覆盖全部源码，再运行如下命令：
+建议使用facebook的yarn代替npm安装，快速&少报错，运行如下命令：
 
 ```
-node ./bin/yummy.js -u
+npm i -g yarn
 
 ```
 
-方式二：简单命令更新（较简单，版本需要2.0.0或以上）
+安装Yummy-Flow
 
 ```
-gulp update
+yarn add Yummy-Flow
 
 ```
 
-方式三：界面更新（最简单，版本需要2.0.0或以上）
+## 启动
 
-打开gulp ui命令界面，在配置项的“更多”选项里有更新按钮。
+输入如下命令启动界面。
 
+```
+yummy
+
+```
 
 ## 文件目录体系
 
@@ -83,6 +81,7 @@ gulp update
     ├── up.png                
     └── down.png
 ```
+
 ## 常见问题
 
 1、问：使用 node install.js 安装插件时存在失败的情况怎么办？
@@ -104,3 +103,6 @@ n stable
 2、问：到底选择命令操作方式还是可视化操作方式好？
 
 答：两种方式都可以使用，甚至可以混合使用，取决于个人喜好，可视化操作是建立在命令操作方式之上的，相对会更加完善，具有方便性，一般情况下效率也更高效一些，但命令操作方式非常的适合基于文件夹维度的项目需求来使用，效率更高，而且命令行中有些挺好用的命令任务并没有完全迁移到界面中去，在命令中使用还是蛮不错的。
+
+
+[更多内容查看使用教程](http://yumyfung.github.io/yummy.github.io/)
