@@ -1,6 +1,6 @@
 {
   "name": "yummy-flow",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Yummy-Flow is a front developer tools",
   "main": "gulpfile.js",
   "homepage": "https://github.com/yumyfung/Yummy-Flow",

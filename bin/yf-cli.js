@@ -49,7 +49,7 @@
 	// 安装
 	if(program.install){
 		console.log('\n!@#$%^&*-----install Yummy-Flow -----');
-		runCMD('yarn add yummy-flow --ignore-engines', function(err){
+		runCMD('yarn global add yummy-flow --ignore-engines', function(err){
 			if(!err) console.log('安装Yummy-Flow成功');
 		});
 		return;
@@ -58,14 +58,14 @@
 	// 更新
 	if(program.update){
 		console.log('\n!@#$%^&*-----update Yummy-----');
-		runCMD('yarn upgrade yummy-flow --latest --ignore-engines', function(err){
+		runCMD('yarn global upgrade yummy-flow --latest --ignore-engines', function(err){
 			if(!err) console.log('更新Yummy-Flow成功');
 		});
 		return;
 	}
 
 	// 默认启动
-	runCMD('gulp ui', function(err){
+	runCMD('node start-bin.js', function(err){
 		if(!err) console.log('正在启动Yummy-Flow...');
 	});
 
