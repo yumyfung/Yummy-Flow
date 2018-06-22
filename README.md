@@ -37,10 +37,18 @@ yarn add yummy-flow --ignore-engines
 
 ```
 
+## 更新
+
+输入如下命令更新Yummy-Flow
+
+```
+yarn upgrade yummy-flow --latest --ignore-engines
+
+```
 
 ## 启动
 
-输入如下命令启动界面。
+输入如下命令启动界面
 
 ```
 yummy
