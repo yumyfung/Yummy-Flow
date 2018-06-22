@@ -48,10 +48,19 @@ yarn global upgrade yummy-flow --latest --ignore-engines
 
 ## 启动
 
-输入如下命令启动界面
+输入如下三个其中任何一个命令即可启动界面
 
 ```
 yummy
+
+yf
+
+yumy-flow
+```
+建议全局安装Yumy-Flow，如果非全局安装，请在本地安装目录下执行如下命令启动界面
+
+```
+gulp ui
 
 ```
 
@@ -116,11 +125,9 @@ n stable
 3、问：报错如下怎呀处理？
 
 ```
-
 error pngjs@0.4.0: The engine "node" is incompatible with this module. Expected version "0.8.x".
 error Found incompatible module
 info Visit https://yarnpkg.com/en/docs/cli/add for documentation about this command.
-
 ```
 
 答：在命令后加--ignore-engines参数
