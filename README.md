@@ -33,7 +33,7 @@ npm i -g yarn
 安装Yummy-Flow
 
 ```
-yarn add Yummy-Flow
+yarn add yummy-flow
 
 ```
 

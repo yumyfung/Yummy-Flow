@@ -1440,7 +1440,7 @@ function taskUpdate(argv, taskCallback){
     return function(){
         var cbDataArr = [];
         var netWrongTips = false;
-        var lastVersionCheck = childProcess.exec('npm view Yummy-Flow');
+        var lastVersionCheck = childProcess.exec('npm view yummy-flow');
         lastVersionCheck.stdout.on('data', function(data){
             try{
                 data = eval('(' + data + ')');
@@ -1476,7 +1476,7 @@ function taskUpdate(argv, taskCallback){
             try{
                 console.log('正在安装更新...');
                 process.send({action: 'updating', tips: '正在安装更新...'});
-                var commandStr = 'yarn add Yummy-Flow@latest';
+                var commandStr = 'yarn add yummy-flow@latest';
                 var command = childProcess.exec(commandStr, function(err,stdout,stderr){
                     if(err){
                         console.log(err);
