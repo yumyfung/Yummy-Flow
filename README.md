@@ -33,7 +33,7 @@ npm i -g yarn
 安装Yummy-Flow
 
 ```
-yarn add yummy-flow --ignore-engines
+yarn global add yummy-flow --ignore-engines
 
 ```
 
@@ -42,7 +42,7 @@ yarn add yummy-flow --ignore-engines
 输入如下命令更新Yummy-Flow
 
 ```
-yarn upgrade yummy-flow --latest --ignore-engines
+yarn global upgrade yummy-flow --latest --ignore-engines
 
 ```
 
