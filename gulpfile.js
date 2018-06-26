@@ -1,7 +1,7 @@
 ﻿/*============================================================
       @作者：yumyfung
       @说明：Yummy-Flow 新一代跨平台的前端构建工具
-      @版本：V0.0.1
+      @版本：V0.0.9
 =============================================================*/
 console.log('\nPlease waiting Yummy-Flow start...\n');
 var gulp = require('gulp');
@@ -45,18 +45,6 @@ var rm = require( 'gulp-rm');
 
 var jsonConcat = require('gulp-json-concat');
 var concat_json = require("gulp-concat-json");
-
-gulp.task('hash', function() {
-    return gulp.src(['E:/SvnProject/qGulp/test/*.css'])
-        .pipe(hash({
-            "template": "{name}_{hash}{ext}?max_age=2592000&md5={hash}"
-        }))
-        .pipe(save('before-servertt-dest')) //cache all files here
-        .pipe(gulp.dest('E:/SvnProject/qGulp/test/dist'))
-        .pipe(save.restore('before-servertt-dest')) //restore all files to the state when we cached them
-        .pipe(hash.manifest('assets.json'))
-        .pipe(gulp.dest('E:/SvnProject/qGulp/test/manifest'));
-});
 
 //工具扩展类
 function Tools(){}
@@ -148,7 +136,7 @@ Tools.mkDirFileSync = Tools.prototype.mkDirFileSync = function(walkPath, fileCon
             fs.mkdirSync(walkPath);
         }
     }
-    mdf(walkPath, fileContent, 1)
+    mdf(walkPath, fileContent, 1);
 }
 
 
@@ -275,13 +263,20 @@ var config = {
         var base = fs.readFileSync(this.baseFilePath, {encoding: 'utf8'});
         var baseJson = JSON.parse(base);
         this.baseJson = baseJson;
+
+        //创建临时使用的文件夹
+        Tools.mkDirFileSync('./Yummy-Flow-TMP/server');
+        Tools.mkDirFileSync("./Yummy-Flow-TMP/SVN/");
+        Tools.mkDirFileSync("./Yummy-Flow-TMP/SVN/html");
+        Tools.mkDirFileSync("./Yummy-Flow-TMP/SVN/mediastyle");
+
         // 服务器
         if(!baseJson.servers){
             baseJson.servers = [
                 {
                     name: '样式服务器',
                     cmd: "u233",
-                    dir: "W:/",
+                    dir: "./Yummy-Flow-TMP/server",
                     format: [
                         ".css",
                         ".png",
@@ -291,7 +286,8 @@ var config = {
                         ".swf"
                     ],
                     ars: "/xxx/xxx/xxx/xxx/",
-                    site: "http://xxx.xxx.cn/"
+                    site: "http://xxx.xxx.cn/",
+                    serverId: 0
                 }
             ];
             flagWrite = true;
@@ -299,13 +295,13 @@ var config = {
         this.servers = baseJson.servers;
         // 基础HTML目录
         if(!baseJson.root_html){
-            baseJson.root_html = 'E:/SvnProject/html';
+            baseJson.root_html = './Yummy-Flow-TMP/SVN/html';
             flagWrite = true;
         }
         this.root_html = baseJson.root_html + '/';
         // 基础样式目录
         if(!baseJson.root_mediastyle){
-            baseJson.root_mediastyle = "E:/SvnProject/mediastyle";
+            baseJson.root_mediastyle = "./Yummy-Flow-TMP/SVN/mediastyle";
             flagWrite = true;
         }
         this.root_mediastyle = baseJson.root_mediastyle + '/';
@@ -341,7 +337,7 @@ var config = {
                 {
                     state: false,
                     name: "默认本地服务器名字",
-                    dir: "E:/SvnProject",
+                    dir: "./Yummy-Flow-TMP/SVN",
                     host: "127.0.0.1",
                     port: "10086"
                 }
@@ -1476,7 +1472,7 @@ function taskUpdate(argv, taskCallback){
             try{
                 console.log('正在安装更新...');
                 process.send({action: 'updating', tips: '正在安装更新...'});
-                var commandStr = 'yarn add yummy-flow@latest';
+                var commandStr = 'yarn global add yummy-flow@latest --ignore-engines';
                 var command = childProcess.exec(commandStr, function(err,stdout,stderr){
                     if(err){
                         console.log(err);

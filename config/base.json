@@ -4,7 +4,7 @@
             "name": "服务器A",
             "cmd": "u233",
             "way": "SERVER_WAY_SSH",
-            "dir": "E:/DIR",
+            "dir": "./Yummy-Flow-TMP/SVN",
             "ssh": {
                 "host": "your IP",
                 "port": "your port",
@@ -32,11 +32,10 @@
             "serverId": 0
         }
     ],
-    "root_html": "E:/DIR/html",
-    "root_mediastyle": "E:/DIR/mediastyle",
+    "root_html": "./Yummy-Flow-TMP/SVN/html",
+    "root_mediastyle": "./Yummy-Flow-TMP/SVN/mediastyle",
     "root_mediastyle_selection": [
-        "E:/DIR/mediastyle",
-        "E:/DIR/source"
+        "./Yummy-Flow-TMP/SVN/mediastyle"
     ],
     "task": {
         "add": "add",
@@ -56,7 +55,7 @@
         {
             "state": true,
             "name": "默认本地服务器名字",
-            "dir": "E:/DIR",
+            "dir": "./Yummy-Flow-TMP/server",
             "host": "127.0.0.1",
             "port": "10086"
         }

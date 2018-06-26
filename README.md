@@ -29,6 +29,12 @@ brew install git
 npm i -g yarn
 
 ```
+yarn命令与npm的全局安装路径不一样，请执行如下命令将输出的结果路径配到环境变量中
+
+```
+yarn global bin
+
+```
 
 安装Yummy-Flow
 
@@ -39,7 +45,7 @@ yarn global add yummy-flow --ignore-engines
 
 ## 更新
 
-输入如下命令更新Yummy-Flow
+直接点击界面更新，或者手动输入如下命令更新Yummy-Flow
 
 ```
 yarn global upgrade yummy-flow --latest --ignore-engines

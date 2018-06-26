@@ -30,6 +30,7 @@
 				console.log('error=>' + err);
 				sucess = 0;
 			}
+			console.dir(stdout);
 			callback(sucess);
 		});
 	}
@@ -65,7 +66,8 @@
 	}
 
 	// 默认启动
-	runCMD('node start-bin.js', function(err){
+	process.chdir(path.relative(process.cwd(), path.dirname(__dirname)));	//更改JS执行路径
+	runCMD('gulp ui', function(err){
 		if(!err) console.log('正在启动Yummy-Flow...');
 	});
 
