@@ -1,7 +1,7 @@
 ﻿/*============================================================
       @作者：yumyfung
       @说明：Yummy-Flow 新一代跨平台的前端构建工具
-      @版本：V0.0.9
+      @版本：V0.0.8
 =============================================================*/
 console.log('\nPlease waiting Yummy-Flow start...\n');
 var gulp = require('gulp');
@@ -38,13 +38,12 @@ var less = require('gulp-less');
 var rev = require('gulp-rev');
 var revReplace = require('gulp-rev-replace');
 var hash = require('gulp-hash-list');
-var revision = require('gulp-asset-revision');
+var revision = require('gulp-yrevision');
 var save = require('gulp-save');
 var merge = require('gulp-merge-json');
 var rm = require( 'gulp-rm');
+var addsrc = require('gulp-add-src');
 
-var jsonConcat = require('gulp-json-concat');
-var concat_json = require("gulp-concat-json");
 
 //工具扩展类
 function Tools(){}
@@ -1855,18 +1854,11 @@ UIClass.prototype.uploadCss = function(cb){
                             .pipe(gulpif(!!that.argv.v, hash({
                                 "template": "{name}_{hash}{ext}?max_age=2592000"
                             })))
-                            .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
-                            .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                             .pipe(gulpif(!!that.argv.v, save('before-merge-json')))
-                            .pipe(gulpif(!!that.argv.v, next(function(){
-                                //合并json
-                                gulp.src(path.join(that.cssFilePath, '*.json'))
-                                    .pipe(save('before-rm-json'))
-                                    .pipe(rm())
-                                    .pipe(save.restore('before-rm-json'))
-                                    .pipe(merge('rev-css.json'))
-                                    .pipe(gulp.dest(that.cssFilePath));
-                            })))
+                            .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
+                            .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css*.json'))))
+                            .pipe(gulpif(!!that.argv.v, merge('rev-css.json')))
+                            .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                             .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
                             .pipe(next(function(){
                                 stream.pipe(minifyCSS({
@@ -1874,33 +1866,24 @@ UIClass.prototype.uploadCss = function(cb){
                                     compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                                     keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
                                 }))
-                                .pipe(next(function(fileListArr){
-                                    fileList = fileList.concat(fileListArr);
-                                }))
-                                // .pipe(gulpif(!!that.argv.v, revision({
-                                //     hasSuffix: true,
-                                //     pathSuffix: /.+/gi,
-                                //     manifest: path.join(that.cssFilePath, 'rev-css.json')
-                                // })))
                                 .pipe(gulpif(!!that.argv.v, hash({
                                     "template": "{name}_{hash}{ext}?max_age=2592000"
                                 })))
-                                .pipe(gulpif(!!that.argv.v, save('before-server-dest')))//cache all files here
-                                .pipe(Tools.dest(that.server))
-                                .pipe(gulpif(!!that.argv.v, save.restore('before-server-dest'))) //restore all files to the state when we cached them
-                                .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
-                                .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
-                                .pipe(gulpif(!!that.argv.v, save('before-merge2-json')))
-                                .pipe(gulpif(!!that.argv.v, next(function(){
-                                    //合并json
-                                    gulp.src(path.join(that.cssFilePath, '*.json'))
-                                        .pipe(save('before-rm2-json'))
-                                        .pipe(rm())
-                                        .pipe(save.restore('before-rm2-json'))
-                                        .pipe(merge('rev-css.json'))
-                                        .pipe(gulp.dest(that.cssFilePath));
+                                .pipe(next(function(fileListArr){
+                                    fileList = fileList.concat(fileListArr);
+                                }))
+                                .pipe(gulpif(!!that.argv.v, revision({
+                                    ignorePre: new RegExp(path.basename(that.cssFilePath) + '\\/', 'gi'),
+                                    hasSuffix: false,
+                                    manifest: path.join(that.cssFilePath, 'rev-css.json')
                                 })))
+                                .pipe(gulpif(!!that.argv.v, save('before-merge2-json')))
+                                .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
+                                .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css*.json'))))
+                                .pipe(gulpif(!!that.argv.v, merge('rev-css.json')))
+                                .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                                 .pipe(gulpif(!!that.argv.v, save.restore('before-merge2-json')))
+                                .pipe(Tools.dest(that.server))
                                 .pipe(next(function(){
                                     // 提单文件（其中包含了如果是检查关联性功能，这里是要在界面增加的提单文件）
                                     process.send({action: 'sync', arsFileArr: fileList});
@@ -1966,12 +1949,12 @@ UIClass.prototype.uploadImg = function(cb, upType){
         }
         gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
-            .pipe(next(function(fileListArr){
-                fileList = fileList.concat(fileListArr);
-            }))
             .pipe(gulpif(!!that.argv.v, hash({
                 "template": "{name}_{hash}{ext}?max_age=2592000"
             })))
+            .pipe(next(function(fileListArr){
+                fileList = fileList.concat(fileListArr);
+            }))
             .pipe(Tools.dest(config.servers[that.serverId]))
             .pipe(next(function(){
                 // 需要判断文件是否存在
@@ -1981,24 +1964,7 @@ UIClass.prototype.uploadImg = function(cb, upType){
 
                 }else {
 
-                    if(!!that.argv.v){
-                        fs.readFile(that.cssFilePath + '\\rev-manifest.json',function(err,data){
-                            if (err) {
-                                ars(fileList);
-                                return;
-                            }
-                            var imgRevFile = data.toString();
-                            imgRevDate = JSON.parse(imgRevFile);
-                            fileList = fileList.map(function(value){
-                                var imgfilename = path.basename(value);
-                                return imgRevDate[imgfilename] ? value.replace(imgfilename,imgRevDate[imgfilename]) : value;
-
-                            })
-                            ars(fileList);
-                        });
-                    } else {
-                        ars(fileList);
-                    }
+                   ars(fileList);
 
                     function ars(list){
                         process.send({action: 'sync', arsFileArr: list});
