@@ -2,25 +2,6 @@
 
 Yummy-Flow就是一个基于nodejs和gulp来开发的前端自动化流程工具，它将前端开发人员常用的样式压缩、图片压缩、合并和上传等一系列繁杂的工作整合起来，提供智能一条龙服务，能够用于辅助团队规范开发，提高团队的工作效率。
 
-## 安装依赖环境（如已安装请忽略此步骤）
-
-请先确保你的电脑环境安装了Git、BuildTools_Full(C++编译工具和Python)，没有的话可以执行下面的命令安装
-
-安装BuildTools
-
-```
-npm i -g build-tools --registry=https://registry.npm.taobao.org
-
-```
-安装Git，Windows下自行下载安装，MacOS下可用以下命令
-
-```
-brew install git
-
-```
-
-配置Git和Python到环境变量，可输入命令git --version和python --version分别查看是否安装成功，成功后请重新打开命令窗口执行接下来的步骤。
-
 ## 安装Yummy-Flow
 
 建议使用facebook的yarn代替npm安装，快速&少报错，运行如下命令：
@@ -36,36 +17,20 @@ yarn global bin
 
 ```
 
-安装Yummy-Flow
+下载Yummy-Flow项目，安装Yummy-Flow
 
 ```
-yarn global add yummy-flow --ignore-engines
-
-```
-
-## 更新
-
-直接点击界面更新，或者手动输入如下命令更新Yummy-Flow
-
-```
-yarn global upgrade yummy-flow --latest --ignore-engines
+cd yumy-flow
+yarn install --ignore-engines
 
 ```
 
 ## 启动
 
-输入如下三个其中任何一个命令即可启动界面
+建议选择位置本地安装Yumy-Flow，如果非全局安装，安装目录下执行如下命令启动界面
 
 ```
-yummy
 
-yf
-
-yumy-flow
-```
-建议全局安装Yumy-Flow，如果非全局安装，请在本地安装目录下执行如下命令启动界面
-
-```
 gulp ui
 
 ```
@@ -137,5 +102,24 @@ info Visit https://yarnpkg.com/en/docs/cli/add for documentation about this comm
 ```
 
 答：在命令后加--ignore-engines参数
+
+4、有时候很容易报一些git,gc++之类的错误，一般都是环境问题，可以安装依赖环境（一般都是针对新电脑，如已安装请忽略此步骤）
+
+请先确保你的电脑环境安装了Git、BuildTools_Full(C++编译工具和Python)，没有的话可以执行下面的命令安装
+
+安装BuildTools
+
+```
+npm i -g build-tools --registry=https://registry.npm.taobao.org
+
+```
+安装Git，Windows下自行下载安装，MacOS下可用以下命令
+
+```
+brew install git
+
+```
+
+配置Git和Python到环境变量，可输入命令git --version和python --version分别查看是否安装成功，成功后请重新打开命令窗口执行接下来的步骤。
 
 [更多内容查看使用教程](http://yumyfung.github.io/yummy.github.io/)
