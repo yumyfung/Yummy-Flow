@@ -1945,8 +1945,10 @@ UIClass.prototype.uploadCss = function(cb){
                             .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
                                 //覆盖部分gulp-hash-list插件属性
                                 var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
-                                if(renameObj[srcPath]) file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
-                                file.hashFilename = path.basename(renameObj[srcPath]);
+                                if(renameObj[srcPath]) {
+                                    file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                                    file.hashFilename = path.basename(renameObj[srcPath]);
+                                }
                             })))
                             .pipe(gulpif(!!that.argv.v, save('before-merge-json')))
                             .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
@@ -1969,8 +1971,10 @@ UIClass.prototype.uploadCss = function(cb){
                                 .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
                                     //覆盖部分gulp-hash-list插件属性
                                     var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
-                                    if(renameObj[srcPath]) file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
-                                    file.hashFilename = path.basename(renameObj[srcPath]);
+                                    if(renameObj[srcPath]) {
+                                        file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                                        file.hashFilename = path.basename(renameObj[srcPath]);
+                                    }
                                 })))
                                 .pipe(next(function(fileListArr){
                                     fileList = fileList.concat(fileListArr);
@@ -2033,8 +2037,10 @@ UIClass.prototype.uploadImg = function(cb, upType){
             .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
                 //覆盖部分gulp-hash-list插件属性
                 var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
-                if(renameObj[srcPath]) file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
-                file.hashFilename = path.basename(renameObj[srcPath]);
+                if(renameObj[srcPath]) {
+                    file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                    file.hashFilename = path.basename(renameObj[srcPath]);
+                }
             })))
             .pipe(hash.manifest('rev-css_'+(new Date().getTime())+'.json')) //生成临时json用于后面合并
             .pipe(gulp.dest(that.cssFilePath))
