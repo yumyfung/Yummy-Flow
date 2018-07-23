@@ -67,7 +67,8 @@ em {color: #f28c48; }
 /*.sidebar_item .current .main_nav:hover {background: none}*/
 .sidebar_item .main_nav p {margin: 0 24px;}
 .sidebar_item .main_li input {margin-right: 10px;width: 12px;height: 12px;border: 1px solid #aaa;vertical-align: middle;}
-.sub_nav_box {position: relative;margin: 0 30px;}
+.sub_nav_box {position: relative;margin:0 0 0 24px;}
+.sub_sub_nav_box{}
 .sub_nav_box::before {content: '';position: absolute;left: 0;top: 0;bottom: 16px;border-left: 1px solid #49465d}
 .sub_nav_box .line {display: inline-block;width: 14px;height: 1px;background: #49465d;vertical-align: middle;}
 .sub_nav_box li {padding: 8px 0;font-size: 12px;cursor: pointer;color: rgba(255,255,255,.4);}

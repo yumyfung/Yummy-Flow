@@ -1,6 +1,6 @@
 {
   "name": "yummy-flow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Yummy-Flow is a front developer tools",
   "main": "gulpfile.js",
   "homepage": "https://github.com/yumyfung/Yummy-Flow",
@@ -44,7 +44,6 @@
     "fibers": "^1.0.13",
     "gulp": "^3.9.1",
     "gulp-add-src": "^1.0.0",
-    "gulp-yrevision": "^0.0.2",
     "gulp-autoprefixer": "^3.1.1",
     "gulp-base64": "^0.1.2",
     "gulp-change": "^1.0.0",
@@ -91,8 +90,9 @@
     "gulp-upload": "0.0.2",
     "gulp-util": "^3.0.4",
     "gulp-yhtml": "^1.0.0",
-    "gulp-ysprite": "^1.0.8",
-    "gulp-ystamp": "^1.1.1",
+    "gulp-yrevision": "^0.0.3",
+    "gulp-ysprite": "^1.0.9",
+    "gulp-ystamp": "^1.1.4",
     "gulp.spritesmith": "*",
     "hosts-group": "^0.1.1",
     "iconv-lite": "^0.4.8",
@@ -111,6 +111,7 @@
     "pngquant-bin": "^2.0.0",
     "quote-stream": "^1.0.2",
     "request": "^2.74.0",
+    "request-progress": "^3.0.0",
     "request-promise": "^4.1.0",
     "rimraf": "^2.3.2",
     "shelljs": "^0.7.5",
@@ -118,6 +119,7 @@
     "ssh-keygen": "^0.4.0",
     "sync-request": "^2.0.0",
     "through2": "^2.0.1",
+    "unzip": "^0.1.11",
     "urllib-sync": "^1.1.3",
     "yargs": "^1.3.3"
   }

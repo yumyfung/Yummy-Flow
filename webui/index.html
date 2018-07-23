@@ -89,47 +89,61 @@
                 <div id="child_menu" style="display: none">
                     <div class="sub_nav_box">
                         <ul>
-                            <li id="sync_fun">
+                            <li class="sub_nav_item" id="sync_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="sync" id="sync"/>
                                 <label for="sync">同步资源</label>
                             </li>
-                            <li id="guanglian_fun">
+                            <li class="sub_nav_item" id="guanglian_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="guanglian" id="guanglian"/>
                                 <label for="guanglian">检查关联性</label>
                             </li>
-                            <li id="stamp_fun">
+                            <li class="sub_nav_item" id="stamp_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" checked class="stamp" id="stamp"/>
                                 <label for="stamp">md5戳</label>
                             </li>
-                            <li id="imagerename_fun">
+                            <li class="sub_nav_item" id="imagerename_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="imagerename" id="imagerename"/>
                                 <label for="imagerename">样式图片重命名</label>
+                                <div class="sub_nav_box sub_sub_nav_box" style="display:none">
+                                    <ul>
+                                        <li class="sub_sub_nav_item" id="style_image_rename__new_box">
+                                            <i class="line"></i>
+                                            <input type="radio" checked="checked" class="style_image_rename__item" name="style_image_rename__item" data-value="RENAME_NEW" id="style_image_rename__new"/>
+                                            <label for="style_image_rename__new">生成新命名</label>
+                                        </li>
+                                        <li class="sub_sub_nav_item" id="style_image_rename__last_box">
+                                            <i class="line"></i>
+                                            <input type="radio" class="style_image_rename__item" name="style_image_rename__item" data-value="RENAME_LAST" id="style_image_rename__last"/>
+                                            <label for="style_image_rename__last">保留上一次命名</label>
+                                        </li>
+                                        <li class="sub_sub_nav_item" id="style_image_rename__self_box">
+                                            <i class="line"></i>
+                                            <input type="radio" class="style_image_rename__item" name="style_image_rename__item" data-value="RENAME_SELF" id="style_image_rename__self"/>
+                                            <label for="style_image_rename__self">自定义命名(后缀)</label>
+                                        </li>
+                                    </ul>
+                                </div>
                             </li>
-                            <li id="absolute_fun">
+                            <li class="sub_nav_item" id="absolute_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="absolute" id="absolute"/>
                                 <label for="absolute">转为绝对路径</label>
                             </li>
-<!--                             <li id="cssrename_fun">
-                                <i class="line"></i>
-                                <input type="checkbox" class="cssrename" id="cssrename"/>
-                                <label for="cssrename">样式重命名(自定义)</label>
-                            </li> -->
-                            <li id="folder_fun">
+                            <li class="sub_nav_item" id="folder_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="folder" id="folder"/>
                                 <label for="folder">创建新目录</label>
                             </li>
-                            <li id="png8_fun">
+                            <li class="sub_nav_item" id="png8_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" checked class="png8" id="png8"/>
                                 <label for="png8">png8(α)</label>
                             </li>
-                            <li id="less_fun">
+                            <li class="sub_nav_item" id="less_fun">
                                 <i class="line"></i>
                                 <input type="checkbox" class="less" id="less"/>
                                 <label for="less">less编译</label>
@@ -185,10 +199,10 @@
     <div class="mod_layer_wrap css_rename_layer" id="css_rename_layer" style="display: none">
         <div class="mod_layer">
             <a class="close mod_layer_wrap_close" href="#">x</a>
-            <h2 class="mod_layer_title">样式重命名(后缀)</h2>
+            <h2 class="mod_layer_title">自定义样式图片命名(后缀)</h2>
             <div class="content">
                 <p class="mod_flex_layout__row">
-                    <input type="text" placeholder="为上传的样式添加一个后缀吧" class="mod_flex_layout__text css_rename"/>
+                    <input type="text" placeholder="为上传的样式添加一个后缀吧，自动添加下划线连接" class="mod_flex_layout__text css_rename"/>
                 </p>
                 <p class="mod_flex_layout__row mod_layer_btn__group">
                     <a class="mod_layer_btn" href="###">确定</a>
@@ -236,7 +250,7 @@
                 <div class="mod_flex_layout__row root">
                     <!-- <input type="text" readonly placeholder="填写站点根目录" class="mod_flex_layout__text root_text"/> -->
                     <div class="mod_flex_layout__text">
-                        <input type="text" readonly placeholder="填写站点根目录" class=" root_text"/>
+                        <input type="text" readonly placeholder="填写站点根目录" class="root_text"/>
                         <div class="myselect">
                             <ul class="myselect__inner">
                                 <li class="myselect__item">
@@ -277,6 +291,10 @@
                             </div>
                         </li>
                     </ul>
+                </div>
+                <h3>代理设置</h3>
+                <div class="mod_flex_layout__row local_proxy">
+                    <input type="text" placeholder="填写代理，例如：http://proxy.xxx.com:8080" class="mod_flex_layout__text local_proxy_text"/>
                 </div>
                 <h3>更新版本</h3>
                 <div class="mod_flex_layout__row root">

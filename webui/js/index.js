@@ -36,6 +36,10 @@ var globalShellCommand = {
   }
 };
 
+//浮层关闭回调管理
+var layerCloseCallbackFn = function(){};
+layerCloseCallbackFn.default = function(){};
+
 // 任务库公用
 var menuLib = {
   // hash表
@@ -238,7 +242,7 @@ var start_process = function (child_process, indexFile) {
               who: server.name,
               F5: null,
               rules: server.format,
-              child: ['#sync_fun', '#guanglian_fun','#stamp_fun','#imagerename_fun','#absolute_fun', '#cssrename_fun', '#folder_fun', '#png8_fun', '#less_fun'],
+              child: ['#sync_fun', '#guanglian_fun','#stamp_fun','#imagerename_fun','#absolute_fun', '#folder_fun', '#png8_fun', '#less_fun'],
               tips: '请把文件拖到这里上传到' + server.name
             };
           };
@@ -271,6 +275,9 @@ var start_process = function (child_process, indexFile) {
                 </li>\
              ');
           }
+
+          //代理设置
+          $('.local_proxy_text').val(message.proxy);          
 
           task = message.task;
           var tplOptStr = '';
@@ -433,7 +440,7 @@ function domInit(cp){
       // 子选项
       var child = menuLib.hash[menuId].child;
       $('.main_li').removeClass('current').find('.sub_nav_box').remove();
-      $('#child_menu li').removeClass('current').hide();
+      $('#child_menu .sub_nav_item').removeClass('current').hide();
       if(child){
         for(var i = 0; i < child.length; i++){
           $(child[i]).show();
@@ -444,6 +451,88 @@ function domInit(cp){
         }
       }
       $('#'+menuId).parent().parent().parent().addClass('current').append($('#child_menu').html());
+
+      // 可先项事件
+      $('.sidebar_item .main_li').off('change');
+      $('.sidebar_item .main_li').on('change', '.sub_nav_box li input', function(){
+        var that = this.parentNode;
+        switch($(this).parent().attr('id')){
+
+          case 'imagerename_fun':
+            if($(this).attr('checked')){
+              $(this).parent().find('.sub_sub_nav_box').show();
+              //自定义命名后缀，从未选中变为选中
+              $("#css_rename_layer .mod_layer_btn").off('click');
+              $('#style_image_rename__self').on('click', function(){
+                $('#css_rename_layer').show();
+                $("#css_rename_layer .mod_layer_btn").off('click');
+                $("#css_rename_layer .mod_layer_btn").on('click', function(){
+                  var renameSelfStr = $('#css_rename_layer .css_rename').val();
+                  if(!renameSelfStr.trim()){
+                    console.log('文件名不能为空哟～');
+                    alert('文件名不能为空哟～');
+                    return;
+                  }
+                  $('#css_rename_layer').hide();
+                });
+              })
+              layerCloseCallbackFn.default = function(){
+                $('#style_image_rename__new').attr('checked', true);
+              };
+            }else{
+              $(this).parent().find('.sub_sub_nav_box').hide();
+            }
+          break;
+
+          case 'folder_fun':
+            //从未选中变为选中
+            if($(this).attr('checked')){
+              deleteCheckedStyle(that);
+              $('#dir_mobile_layer').show();
+              $("#dir_mobile_layer .mod_layer_btn").off('click');
+              $("#dir_mobile_layer .mod_layer_btn").on('click', function(){
+                var mobileDir = $('#dir_mobile_layer .mobile_dir').val();
+                if(!mobileDir.trim()){
+                  console.log('文件名不能为空哟～');
+                  alert('文件名不能为空哟～');
+                  return;
+                }
+                addCheckedStyle(that);
+                $('#dir_mobile_layer').hide();
+              });
+            }
+            break;
+
+            default:
+              checkedStyle(that);
+        }
+
+        function addCheckedStyle(that){
+          if(!$(that).find('input').attr('checked')){
+            $(that).find('input').attr('checked', true);
+            $(that).addClass('current');
+            return;
+          }
+        }
+
+        function deleteCheckedStyle(that){
+          if($(that).find('input').attr('checked')){
+            $(that).find('input').attr('checked', false);
+            $(that).removeClass('current');
+            return;
+          }
+        }
+
+        function checkedStyle(that){
+          if($(that).find('input').attr('checked')){
+            $(that).addClass('current');
+            return;
+          }
+          $(that).removeClass('current');
+        }
+
+      });
+
      }
 
     initSidebar();
@@ -469,82 +558,10 @@ function domInit(cp){
       initSidebar();
     });
 
-    // 可先项事件
-    $('.sidebar_item .main_li').on('change', '.sub_nav_box li input', function(){
-      var that = this.parentNode;
-      switch($(this).parent().attr('id')){
-
-        case 'folder_fun':
-          //从未选中变为选中
-          if($(this).attr('checked')){
-            deleteCheckedStyle(that);
-            $('#dir_mobile_layer').show();
-            $("#dir_mobile_layer .mod_layer_btn").off('click');
-            $("#dir_mobile_layer .mod_layer_btn").on('click', function(){
-              var mobileDir = $('#dir_mobile_layer .mobile_dir').val();
-              if(!mobileDir.trim()){
-                console.log('文件名不能为空哟～');
-                alert('文件名不能为空哟～');
-                return;
-              }
-              addCheckedStyle(that);
-              $('#dir_mobile_layer').hide();
-            });
-          }
-          break;
-
-          case 'cssrename_fun':
-            //从未选中变为选中
-            if($(this).attr('checked')){
-              deleteCheckedStyle(that);
-              $('#css_rename_layer').show();
-              $("#css_rename_layer .mod_layer_btn").off('click');
-              $("#css_rename_layer .mod_layer_btn").on('click', function(){
-                var mobileDir = $('#css_rename_layer .css_rename').val();
-                if(!mobileDir.trim()){
-                  console.log('文件名不能为空哟～');
-                  alert('文件名不能为空哟～');
-                  return;
-                }
-                addCheckedStyle(that);
-                $('#css_rename_layer').hide();
-              });
-            }
-            break;
-
-          default:
-            checkedStyle(that);
-      }
-
-      function addCheckedStyle(that){
-        if(!$(that).find('input').attr('checked')){
-          $(that).find('input').attr('checked', true);
-          $(that).addClass('current');
-          return;
-        }
-      }
-
-      function deleteCheckedStyle(that){
-        if($(that).find('input').attr('checked')){
-          $(that).find('input').attr('checked', false);
-          $(that).removeClass('current');
-          return;
-        }
-      }
-
-      function checkedStyle(that){
-        if($(that).find('input').attr('checked')){
-          $(that).addClass('current');
-          return;
-        }
-        $(that).removeClass('current');
-      }
-
-    });
-
     // 关闭浮层面板
     $('.mod_layer_wrap .mod_layer_wrap_close').click(function(){
       $(this).parent().parent().hide();
+      layerCloseCallbackFn.default();
     });
 
     // 关闭配置面板
@@ -815,6 +832,14 @@ function domInit(cp){
 
     });
 
+    //代理设置
+    $('.local_proxy_text').on('change', function(){
+      var proxyVal = $(this).val().trim();
+      if(proxyVal){
+        cp.send({action: 'command', code: 'proxy', name: '设置代理 => ', command: 'gulp proxy -y ' + proxyVal, callback: 'callback_init_data'});
+      }
+    });
+
     // 添加hosts
     $('#btn_add_hosts').on('click', function(){
       $('#hosts_layer').css({'z-index':9999}).show();
@@ -1062,14 +1087,13 @@ function domInit(cp){
               if($('#guanglian').attr('checked')){
                 cmd += ' -g';
               }
-              if($('#cssrename').attr('checked')){
-                cmd += ' -c "' + $('#css_rename_layer .css_rename').val() + '"';
-              }
               if($('#stamp').attr('checked')){
                 cmd += ' -m';
               }
               if($('#imagerename').attr('checked')){
-                cmd += ' -v';
+                var renameSelf = '';
+                if($('#style_image_rename__self').attr('checked')) renameSelf = ' -c "' + $('#css_rename_layer .css_rename').val().trim() + '"';
+                cmd += ' -v "' + $('.style_image_rename__item:checked').attr('data-value') + '"' + renameSelf;
               }
               if($('#absolute').attr('checked')){
                 cmd += ' -a';

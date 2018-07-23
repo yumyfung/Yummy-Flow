@@ -1,12 +1,13 @@
 ﻿/*============================================================
       @作者：yumyfung
       @说明：Yummy-Flow 新一代跨平台的前端构建工具
-      @版本：V0.0.8
+      @版本：V0.1.1
 =============================================================*/
 console.log('\nPlease waiting Yummy-Flow start...\n');
 var gulp = require('gulp');
 var fs = require('fs');
 var path = require('path');
+// var url = require('url');
 var childProcess = require('child_process');
 var gutil = require('gulp-util');
 var argv = require('yargs').argv;
@@ -26,7 +27,6 @@ var iconv = require('iconv-lite');
 var gulpif = require('gulp-if');
 var jsonFormat = require('gulp-json-format');
 var download = require("gulp-download");
-var unzip = require("gulp-unzip");
 var gulpCopy = require('gulp-copy');
 var yhtml = require('gulp-yhtml');
 var prettify = require('gulp-html-prettify');
@@ -43,7 +43,7 @@ var save = require('gulp-save');
 var merge = require('gulp-merge-json');
 var rm = require( 'gulp-rm');
 var addsrc = require('gulp-add-src');
-
+var clean = require('gulp-clean');
 
 //工具扩展类
 function Tools(){}
@@ -73,6 +73,11 @@ Tools.deepClone = Tools.prototype.deepClone = function(obj){
     }
     return newobj;
 };
+
+//校正路径
+Tools.formatPath = Tools.prototype.formatPath = function(mPath) {
+    return path.normalize(mPath).replace(/\\/g, '/');
+}
 
 //gulp.dest上传到服务器方法重写
 Tools.dest = Tools.prototype.dest = function(dest){
@@ -214,6 +219,7 @@ var config = {
     root_html: '',
     root_mediastyle: '',
     base_ars: 'ars/',
+    proxy: '',
     servers: null,
     localServerCache: {},
     tools: {
@@ -318,7 +324,8 @@ var config = {
                 ars: "ars",
                 current: "current",
                 open: "open",
-                update: "update"
+                update: "update",
+                proxy: "proxy"
             };
             flagWrite = true;
         }
@@ -1212,11 +1219,7 @@ function taskMinifyCss(argv, taskCallback){
                 compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
                 keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
             }))
-            .pipe(hash({
-                "template": "{name}_{hash}{ext}?max_age=2592000&md5={hash}"
-            }))
             .pipe(Tools.dest(output))
-            .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css.json')))
             .pipe(gulpif(!!that.argv.v, Tools.dest(output)))
             .pipe(next(function(){
                 console.log('CSS压缩成功...');
@@ -1270,7 +1273,7 @@ function taskSprite(argv, taskCallback){
                         cssName: imgFile + '.import.css',
                         algorithm: 'binary-tree',
                         engine: require('phantomjssmith') || 'pixelsmith',
-                        padding: 2,
+                        padding: 12,
                         cssVarMap: function(sprite) {
                             //替换sprite文件图片名字中的@字符，生成的类名要引用到图片中的名字，不能有@
                             sprite.name = sprite.name.replace('@', '-');
@@ -1429,10 +1432,25 @@ function taskTest(argv, taskCallback){
     }
 }
 
+//代理设置
+function taskProxy(argv, taskCallback){
+    return function(){
+        config.baseJson.proxy = argv.y || '';
+        if(config.baseJson.proxy){
+            fs.writeFileSync(config.baseFilePath, JSON.stringify(config.baseJson));
+            gulp.src(config.baseFilePath).pipe(jsonFormat(4)).pipe(Tools.dest(path.dirname(config.baseFilePath)));
+        }
+    }
+}
+
 
 // 升级新版本
 function taskUpdate(argv, taskCallback){
     return function(){
+        var unzip = require("gulp-unzip");
+        var request = require('request');
+        var progress = require('request-progress');
+
         var cbDataArr = [];
         var netWrongTips = false;
         var lastVersionCheck = childProcess.exec('npm view yummy-flow');
@@ -1469,31 +1487,96 @@ function taskUpdate(argv, taskCallback){
             }
             if(!!taskCallback) taskCallback(cbDataArr, 1);  //开始更新，拉起更新界面
             try{
-                console.log('正在安装更新...');
-                process.send({action: 'updating', tips: '正在安装更新...'});
-                var commandStr = 'yarn global add yummy-flow@latest --ignore-engines';
-                var command = childProcess.exec(commandStr, function(err,stdout,stderr){
-                    if(err){
-                        console.log(err);
-                        console.log('新版本升级插件失败...');
-                        cbDataArr.push('新版本升级插件失败...');
-                        if(!!taskCallback) taskCallback(cbDataArr, 0);
-                        return;
-                    }
-                    //要关闭退出已开启的本地服务器，防止再次开户冲突
-                    config.closeLocalServer();
-                    console.log('新版本升级完毕...');
-                    cbDataArr.push('新版本升级完毕...');
-                    if(!!taskCallback) taskCallback(cbDataArr, 2);
-                });
-                command.stdout.on('data', function(data){
-                    console.log(data);
-                    process.send({action: 'updating', tips: data});
-                });
-                command.stderr.on('data', function(data){
-                    console.log(data);
-                    process.send({action: 'updating', tips: data});
-                });
+                console.log('正在下载更新包...');
+                if(process) process.send({action: 'updating', tips: '正在下载更新包...'});
+
+                var targetOptions = {
+                        method: 'GET',
+                        url: 'https://codeload.github.com/yumyfung/Yummy-Flow/zip/master',
+                        timeout: 8000,
+                        encoding: null,
+                    };
+                targetOptions.proxy = config.baseJson.proxy; //代理服务器
+
+                progress(request(targetOptions), {
+                    // throttle: 2000,                    // Throttle the progress event to 2000ms, defaults to 1000ms
+                    // delay: 1000,                       // Only start to emit after 1000ms delay, defaults to 0ms
+                    // lengthHeader: 'x-transfer-length'  // Length header to use, defaults to content-length
+                })
+                .on('progress', function (state) {
+                    // The state is an object that looks like this:
+                    // {
+                    //     percent: 0.5,               // Overall percent (between 0 to 1)
+                    //     speed: 554732,              // The download speed in bytes/sec
+                    //     size: {
+                    //         total: 90044871,        // The total payload size in bytes
+                    //         transferred: 27610959   // The transferred payload size in bytes
+                    //     },
+                    //     time: {
+                    //         elapsed: 36.235,        // The total elapsed seconds since the start (3 decimals)
+                    //         remaining: 81.403       // The remaining seconds to finish (3 decimals)
+                    //     }
+                    // }
+                    // console.log('progress', state);
+                    if(state.percent) console.log(state.percent.toFixed(2)*100 + '%')
+                })
+                .on('error', function (err) {
+                    // Do something with err
+                })
+                .on('end', function () {
+                    // Do something after request finishes
+                    console.log('下载完成，正在解压...');
+                    if(process) process.send({action: 'updating', tips: '下载完成，正在解压...'});
+                    gulp.src(path.join(__dirname,'Yummy-Flow-download.zip'))
+                    .pipe(save('before-dest'))
+                    .pipe(unzip({
+                      filter : function(entry){
+                        if(entry.path.match(/^Yummy-Flow-master\/(config|tools|template|bin)\/*/)) return false;
+                        console.log('解压：' + entry.path);
+                        return true;
+                      }
+                    }))
+                    .pipe(gulp.dest(path.join(__dirname, 'download')))
+                    .pipe(save.restore('before-dest'))
+                    .pipe(clean({force: true}))
+                    .pipe(next(function(){
+                        gulp.src(path.join(__dirname, 'download', 'Yummy-Flow-master/**/*'))
+                            .pipe(gulp.dest(__dirname))
+                            .pipe(next(function(){
+                                gulp.src(path.join(__dirname, 'download')).pipe(clean({force: true}));
+                            }))
+                            .pipe(next(function(){
+                                console.log('解压完成，正在安装更新插件...');
+                                if(process) process.send({action: 'updating', tips: '解压完成，正在安装更新插件...'});
+                                var commandStr = 'yarn install --ignore-engines';
+                                var command = childProcess.exec(commandStr, function(err,stdout,stderr){
+                                    if(err){
+                                        console.log(err);
+                                        console.log('新版本升级插件失败...');
+                                        cbDataArr.push('新版本升级插件失败...');
+                                        if(!!taskCallback) taskCallback(cbDataArr, 0);
+                                        return;
+                                    }
+                                    //要关闭退出已开启的本地服务器，防止再次开户冲突
+                                    config.closeLocalServer();
+                                    console.log('新版本升级完毕...');
+                                    cbDataArr.push('新版本升级完毕...');
+                                    if(!!taskCallback) taskCallback(cbDataArr, 2);
+                                });
+                                command.stdout.on('data', function(data){
+                                    console.log(data);
+                                    if(process) process.send({action: 'updating', tips: data});
+                                });
+                                command.stderr.on('data', function(data){
+                                    console.log(data);
+                                    if(process) process.send({action: 'updating', tips: data});
+                                });
+                            }));
+                    }))
+                    
+                })
+                .pipe(fs.createWriteStream(path.join(__dirname,'Yummy-Flow-download.zip')))
+
             }catch(e){
                 console.log('------------------Error--------------');
                 console.log('下载遇到错误，很可能是网络问题，如网络需要代理，请开启。');
@@ -1566,6 +1649,9 @@ config.taskFun[config.task.less] = taskLess;
 //测试用例
 gulp.task('test', taskTest(argv));
 config.taskFun['test'] = taskTest;
+//代理设置
+gulp.task('proxy', taskProxy(argv));
+config.taskFun['proxy'] = taskProxy;
 //UI上传服务器
 config.taskFun['ui_upload_server'] = uiUploadServer;
 //UI任务
@@ -1821,7 +1907,6 @@ UIClass.prototype.uploadCss = function(cb){
     gulp.src(that.cssFiles, {base: path.normalize(config.root_mediastyle)})
         .pipe(gulpif(!!that.argv.l, less()))
         .pipe(gulpif(!!that.argv.g, grepContents(regGl)))
-        .pipe(gulpif(!!that.argv.c, rename({'suffix': that.argv.c})))
         .pipe(stripCssComments())
         .pipe(cssimport())
         .pipe(tobase64({
@@ -1833,6 +1918,7 @@ UIClass.prototype.uploadCss = function(cb){
             slice: that.cssBasePath,
             sprite: that.cssBasePath + '/sprite',
             engine: require('phantomjssmith'),
+            padding: 12,
             callback: function(stream){
                 var site = '';
                 if(that.argv.a){
@@ -1844,6 +1930,8 @@ UIClass.prototype.uploadCss = function(cb){
                     stamp: stamp,
                     absolute: site,
                     callback: function(stream, backgroundImgs){
+                        var renameObj = null;
+                        if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))) renameObj = JSON.parse(fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json')))
                         //需不需要把相关资源也上传
                         if(that.argv.r){
                             that.imgFiles = that.imgFiles.concat(backgroundImgs).unique();
@@ -1852,12 +1940,21 @@ UIClass.prototype.uploadCss = function(cb){
                         var fileList = [];
                         gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
                             .pipe(gulpif(!!that.argv.v, hash({
-                                "template": "{name}_{hash}{ext}?max_age=2592000"
+                                "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
+                            })))
+                            .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
+                                //覆盖部分gulp-hash-list插件属性
+                                var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
+                                if(renameObj[srcPath]) file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                                file.hashFilename = path.basename(renameObj[srcPath]);
                             })))
                             .pipe(gulpif(!!that.argv.v, save('before-merge-json')))
                             .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
-                            .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css*.json'))))
-                            .pipe(gulpif(!!that.argv.v, merge('rev-css.json')))
+                            .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css_*.json'))))
+                            .pipe(gulpif(!!that.argv.v, merge({
+                                fileName: 'rev-css.json',
+                                startObj: renameObj || {}
+                            })))
                             .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                             .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
                             .pipe(next(function(){
@@ -1867,7 +1964,13 @@ UIClass.prototype.uploadCss = function(cb){
                                     keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
                                 }))
                                 .pipe(gulpif(!!that.argv.v, hash({
-                                    "template": "{name}_{hash}{ext}?max_age=2592000"
+                                    "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
+                                })))
+                                .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
+                                    //覆盖部分gulp-hash-list插件属性
+                                    var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
+                                    if(renameObj[srcPath]) file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                                    file.hashFilename = path.basename(renameObj[srcPath]);
                                 })))
                                 .pipe(next(function(fileListArr){
                                     fileList = fileList.concat(fileListArr);
@@ -1879,8 +1982,11 @@ UIClass.prototype.uploadCss = function(cb){
                                 })))
                                 .pipe(gulpif(!!that.argv.v, save('before-merge2-json')))
                                 .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
-                                .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css*.json'))))
-                                .pipe(gulpif(!!that.argv.v, merge('rev-css.json')))
+                                .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css_*.json'))))
+                                .pipe(gulpif(!!that.argv.v, merge({
+                                    fileName: 'rev-css.json',
+                                    startObj: renameObj || {}
+                                })))
                                 .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                                 .pipe(gulpif(!!that.argv.v, save.restore('before-merge2-json')))
                                 .pipe(Tools.dest(that.server))
@@ -1914,23 +2020,34 @@ UIClass.prototype.uploadImg = function(cb, upType){
         return;
     }
     var fileList = [];
+    var renameObj = null;
+    if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))) renameObj = JSON.parse(fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json')))
 
     // 生成改名列表清单
     //upType=1表示是从上传样式传过来的图片，在上传样式过程中已经处理生成过一次json了，不需要重复
     if(!!that.argv.v && upType != 1){    
         gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
             .pipe(hash({
-                "template": "{name}_{hash}{ext}?max_age=2592000"
+                "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
             }))
+            .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
+                //覆盖部分gulp-hash-list插件属性
+                var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
+                if(renameObj[srcPath]) file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                file.hashFilename = path.basename(renameObj[srcPath]);
+            })))
             .pipe(hash.manifest('rev-css_'+(new Date().getTime())+'.json')) //生成临时json用于后面合并
             .pipe(gulp.dest(that.cssFilePath))
             .pipe(next(function(){
                 //合并json
-                gulp.src(path.join(that.cssFilePath, '*.json'))
+                gulp.src(path.join(that.cssFilePath, 'rev-css_*.json'))
                     .pipe(save('before-rm-json'))
                     .pipe(rm())
                     .pipe(save.restore('before-rm-json'))
-                    .pipe(merge('rev-css.json'))
+                    .pipe(gulpif(!!that.argv.v, merge({
+                        fileName: 'rev-css.json',
+                        startObj: renameObj || {}
+                    })))
                     .pipe(gulp.dest(that.cssFilePath));
             }));
     }
@@ -1950,7 +2067,7 @@ UIClass.prototype.uploadImg = function(cb, upType){
         gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
             .pipe(gulpif(!!that.argv.v, hash({
-                "template": "{name}_{hash}{ext}?max_age=2592000"
+                "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
             })))
             .pipe(next(function(fileListArr){
                 fileList = fileList.concat(fileListArr);
@@ -2019,6 +2136,7 @@ process.on("message",function(message) {
                 action: 'init_data',
                 root_mediastyle: config.root_mediastyle,
                 root_mediastyle_selection: config.baseJson.root_mediastyle_selection,
+                proxy: config.baseJson.proxy,
                 task: config.task,
                 template: config.template,
                 servers: config.servers,
@@ -2083,3 +2201,5 @@ process.on('SIGINT', function() {
 module.exports.run = function(){
     gulp.run('ui');
 }
+
+
