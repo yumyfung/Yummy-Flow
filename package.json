@@ -24,6 +24,7 @@
     "yf": "./bin/yf-cli.js"
   },
   "scripts": {
+    "update": "npm i -g yarn && yarn install --ignore-engines",
     "ready-tips": "echo '请稍后，请确保使用管理员权限执行该命令，你的git环境、C++编译工具和Python环境正在安装（如果此命令失败，请执行npm run win-ready-tools命令手动安装并配置好环境变量）..';",
     "ready-tips-end": "echo '环境安装完成，请打开新窗口分别输入执行git --version和python --version两个命令检测是否配置好环境变量，如果没有，请手动配置并重新打开窗口';",
     "win-ready": "npm run ready-tips & npm i -g build-tools --registry=https://registry.npm.taobao.org && npm run ready-tips-end",
