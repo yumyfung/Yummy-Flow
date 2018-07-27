@@ -1,4 +1,4 @@
-﻿/*============================================================
+/*============================================================
       @作者：yumyfung
       @说明：Yummy-Flow 新一代跨平台的前端构建工具
       @版本：V0.1.1
@@ -1465,8 +1465,11 @@ function taskUpdate(argv, taskCallback){
             }
             var version = data.version.replace(/\r\n|\n/g, '').replace(/\s+/g, '');
             var curVersion = JSON.parse(fs.readFileSync('./package.json', 'utf8')).version;
-            var hasNewVersion = (version > curVersion);
-            var features = data.records[version] || [];
+            var features = [];
+            for(var key in data.records){
+                if(key > curVersion) features = features.concat(data.records[key]);
+            }
+            var hasNewVersion = version > curVersion;
             //只是检测是否有新版本
             if(argv.t){
                 if(hasNewVersion){
