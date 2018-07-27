@@ -1,6 +1,6 @@
 {
   "name": "yummy-flow",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Yummy-Flow is a front developer tools",
   "main": "gulpfile.js",
   "homepage": "https://github.com/yumyfung/Yummy-Flow",
@@ -9,15 +9,23 @@
     "test": "test"
   },
   "features": [
-    "增加检查文件关联性",
-    "增加样式重命名",
-    "增加本地服务器配置",
-    "增加内置HTML模板化编译",
-    "增加服务器SSH上传方式",
-    "站点根目录允许创建多个",
-    "hosts功能自由关闭",
-    "版本更新检查提示"
+    "修复样式图片重命名时样式里图片没更新命名的bug"
   ],
+  "records": {
+    "0.1.2": [
+        "修复样式图片重命名时样式里图片没更新命名的bug"
+    ],
+    "0.1.1": [
+        "增加检查文件关联性",
+        "增加样式重命名",
+        "增加本地服务器配置",
+        "增加内置HTML模板化编译",
+        "增加服务器SSH上传方式",
+        "站点根目录允许创建多个",
+        "hosts功能自由关闭",
+        "版本更新检查提示"
+    ]
+  },
   "bin": {
     "yummy": "./bin/yf-cli.js",
     "yummy-flow": "./bin/yf-cli.js",

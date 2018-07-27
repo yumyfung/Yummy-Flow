@@ -1464,8 +1464,9 @@ function taskUpdate(argv, taskCallback){
                 return;
             }
             var version = data.version.replace(/\r\n|\n/g, '').replace(/\s+/g, '');
-            var features = data.features || [];
-            var hasNewVersion = (version > JSON.parse(fs.readFileSync('./package.json', 'utf8')).version);
+            var curVersion = JSON.parse(fs.readFileSync('./package.json', 'utf8')).version;
+            var hasNewVersion = (version > curVersion);
+            var features = data.records[version] || [];
             //只是检测是否有新版本
             if(argv.t){
                 if(hasNewVersion){
@@ -1980,7 +1981,7 @@ UIClass.prototype.uploadCss = function(cb){
                                     fileList = fileList.concat(fileListArr);
                                 }))
                                 .pipe(gulpif(!!that.argv.v, revision({
-                                    ignorePre: new RegExp(path.basename(that.cssFilePath) + '\\/', 'gi'),
+                                    ignorePre: new RegExp(Tools.formatPath(that.cssFilePath).replace(Tools.formatPath(config.root_mediastyle), '') + '\\/', 'gi'),
                                     hasSuffix: false,
                                     manifest: path.join(that.cssFilePath, 'rev-css.json')
                                 })))
