@@ -21,7 +21,8 @@ yarn global bin
 
 ```
 cd yumy-flow
-yarn install --ignore-engines
+npm run run:win (for windows)
+npm run run:mac (for macOs)
 
 ```
 
