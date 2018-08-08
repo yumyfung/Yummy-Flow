@@ -1234,7 +1234,7 @@ function taskSprite(argv, taskCallback){
         var fileIsFixed = false;
         //指定图片合并
         if(argv.f && typeof argv.f == 'string'){
-            imgDirArr = [argv.f.split(',')];
+            imgDirArr = [argv.f.split(',')];d
             fileIsFixed = true;
         }
         //默认工具文件夹合并
