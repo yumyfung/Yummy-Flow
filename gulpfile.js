@@ -1220,7 +1220,6 @@ function taskMinifyCss(argv, taskCallback){
                 keepBreaks: false//类型：Boolean 默认：false [是否保留换行]
             }))
             .pipe(Tools.dest(output))
-            .pipe(gulpif(!!that.argv.v, Tools.dest(output)))
             .pipe(next(function(){
                 console.log('CSS压缩成功...');
                 if(!!taskCallback) taskCallback(['CSS压缩成功...']);
