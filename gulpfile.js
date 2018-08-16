@@ -538,6 +538,7 @@ var Common = {
                 slice: tempDirLocalCss ||config.dir_local_css,
                 sprite: (tempDirLocalCss||config.dir_local_css) + '/sprite',
                 engine: require('phantomjssmith'),
+                algorithm: 'top-down',
                 callback: function(stream){
                     var site = '';
                     if(argv.a){
@@ -1270,7 +1271,8 @@ function taskSprite(argv, taskCallback){
                     .pipe(spritesmith({
                         imgName: imgFile + '.png',
                         cssName: imgFile + '.import.css',
-                        algorithm: 'binary-tree',
+                        // algorithm: 'binary-tree',
+                        algorithm: 'top-down',
                         engine: require('phantomjssmith') || 'pixelsmith',
                         padding: 12,
                         cssVarMap: function(sprite) {
@@ -1922,6 +1924,7 @@ UIClass.prototype.uploadCss = function(cb){
             sprite: that.cssBasePath + '/sprite',
             engine: require('phantomjssmith'),
             padding: 12,
+            algorithm: 'top-down',
             callback: function(stream){
                 var site = '';
                 if(that.argv.a){
@@ -1934,7 +1937,10 @@ UIClass.prototype.uploadCss = function(cb){
                     absolute: site,
                     callback: function(stream, backgroundImgs){
                         var renameObj = null;
-                        if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))) renameObj = JSON.parse(fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json')))
+                        if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
+                            var fileCont = fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json'));
+                            if(fileCont.length) renameObj = JSON.parse(fileCont.toString());
+                        } 
                         //需不需要把相关资源也上传
                         if(that.argv.r){
                             that.imgFiles = that.imgFiles.concat(backgroundImgs).unique();
@@ -1963,6 +1969,10 @@ UIClass.prototype.uploadCss = function(cb){
                             .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                             .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
                             .pipe(next(function(){
+                                if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
+                                    var fileCont = fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json'));
+                                    if(fileCont.length) renameObj = JSON.parse(fileCont.toString());
+                                }
                                 stream.pipe(minifyCSS({
                                     advanced: false,//类型：Boolean 默认：true [是否开启高级优化（合并选择器等）]
                                     compatibility: 'ie7',//类型：String 默认：''or'*' [启用兼容模式； 'ie7'：IE7兼容模式，'ie8'：IE8兼容模式，'*'：IE9+兼容模式]
