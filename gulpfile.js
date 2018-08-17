@@ -1946,8 +1946,19 @@ UIClass.prototype.uploadCss = function(cb){
                             that.imgFiles = that.imgFiles.concat(backgroundImgs).unique();
                             // process.send({action: 'sync', arsFileArr: that.imgFiles});
                         }
+                        var imageminParamObj = {
+                            quality: '65-80',
+                            optimizationLevel: 3,
+                            progressive: true,
+                            interlaced: true ,
+                            svgoPlugins: [{removeViewBox: false}]
+                        };
+                        if(that.argv.p){
+                            imageminParamObj['use'] = [pngquant()];
+                        }
                         var fileList = [];
                         gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
+                            .pipe(imagemin(imageminParamObj))
                             .pipe(gulpif(!!that.argv.v, hash({
                                 "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
                             })))
@@ -1971,6 +1982,7 @@ UIClass.prototype.uploadCss = function(cb){
                             })))
                             .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
                             .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
+                            .pipe(Tools.dest(that.server))
                             .pipe(next(function(){
                                 if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
                                     var fileCont = fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json'));
@@ -2013,14 +2025,6 @@ UIClass.prototype.uploadCss = function(cb){
                                 .pipe(next(function(){
                                     // 提单文件（其中包含了如果是检查关联性功能，这里是要在界面增加的提单文件）
                                     process.send({action: 'sync', arsFileArr: fileList});
-                                    // 如果本来是不需要上传图片的，但具有图片时（同步资源或sprite产生）需要上传
-                                    if(that.imgFiles.length){
-                                        that.uploadImg(function(){
-                                            console.log('样式上传到完毕...');
-                                            cb && typeof cb == 'function' ? cb() : '';
-                                        }, 1);
-                                        return;
-                                    }
                                     console.log('样式上传到完毕...');
                                     cb && typeof cb == 'function' ? cb() : '';
                                 }));
@@ -2044,8 +2048,7 @@ UIClass.prototype.uploadImg = function(cb, upType){
     if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))) renameObj = JSON.parse(fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json')))
 
     // 生成改名列表清单
-    //upType=1表示是从上传样式传过来的图片，在上传样式过程中已经处理生成过一次json了，不需要重复
-    if(!!that.argv.v && upType != 1){    
+    if(!!that.argv.v){    
         gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
             .pipe(hash({
                 "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
@@ -2088,7 +2091,7 @@ UIClass.prototype.uploadImg = function(cb, upType){
         }
         gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
-            .pipe(gulpif(!!that.argv.v && upType != 1, hash({
+            .pipe(gulpif(!!that.argv.v, hash({
                 "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
             })))
             .pipe(next(function(fileListArr){
