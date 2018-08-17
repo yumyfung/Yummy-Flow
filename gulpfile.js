@@ -1959,6 +1959,9 @@ UIClass.prototype.uploadCss = function(cb){
                                     file.hashFilename = path.basename(renameObj[srcPath]);
                                 }
                             })))
+                            .pipe(next(function(fileListArr){
+                                fileList = fileList.concat(fileListArr);
+                            }))
                             .pipe(gulpif(!!that.argv.v, save('before-merge-json')))
                             .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
                             .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css_*.json'))))
@@ -2085,7 +2088,7 @@ UIClass.prototype.uploadImg = function(cb, upType){
         }
         gulp.src(that.imgFiles[key], {base: path.normalize(config.root_mediastyle)})
             .pipe(imagemin(imageminParamObj))
-            .pipe(gulpif(!!that.argv.v, hash({
+            .pipe(gulpif(!!that.argv.v && upType != 1, hash({
                 "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
             })))
             .pipe(next(function(fileListArr){
@@ -2099,15 +2102,11 @@ UIClass.prototype.uploadImg = function(cb, upType){
                     upImg(key);
 
                 }else {
-
-                   ars(fileList);
-
-                    function ars(list){
-                        process.send({action: 'sync', arsFileArr: list});
-                        console.log('图片上传到完毕...');
-                        cb && typeof cb == 'function' ? cb() : '';
-                    };
-
+                    if(upType != 1){
+                        process.send({action: 'sync', arsFileArr: fileList});
+                    }
+                    console.log('图片上传到完毕...');
+                    cb && typeof cb == 'function' ? cb() : '';
                 }
             }));
     }
