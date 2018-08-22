@@ -108,10 +108,17 @@ info Visit https://yarnpkg.com/en/docs/cli/add for documentation about this comm
 
 请先确保你的电脑环境安装了Git、BuildTools_Full(C++编译工具和Python)，没有的话可以执行下面的命令安装
 
+安装BuildTools
+
+```
+npm i -g build-tools
+
+```
+
 安装phantomjs
 
 ```
-brew install phantomjs
+npm install -g phantomjs
 
 ```
 安装Git，Windows下自行下载安装，MacOS下可用以下命令
@@ -125,12 +132,13 @@ brew install git
 
 5、mac下插件phantomjs经常会报错安装失败，建议使用brew安装
 
-安装BuildTools
+公司网络有代理的，先配置代理，否则会下载失败（这个命令只对当前终端有效，退出就不行了
 
 ```
-npm i -g build-tools --registry=https://registry.npm.taobao.org
+export ALL_PROXY=http://web-proxy.xxx.com:8080
 
 ```
+
 然后执行phantomjs -v如果还是找不到，建议执行如下命令进行强制brew link
 
 ```
