@@ -1937,7 +1937,7 @@ UIClass.prototype.uploadCss = function(cb){
                     absolute: site,
                     callback: function(stream, backgroundImgs){
                         var renameObj = null;
-                        if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
+                        if(!!that.argv.v && fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
                             var fileCont = fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json'));
                             if(fileCont.length) renameObj = JSON.parse(fileCont.toString());
                         } 
@@ -1984,7 +1984,7 @@ UIClass.prototype.uploadCss = function(cb){
                             .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
                             .pipe(Tools.dest(that.server))
                             .pipe(next(function(){
-                                if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
+                                if(!!that.argv.v && fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
                                     var fileCont = fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json'));
                                     if(fileCont.length) renameObj = JSON.parse(fileCont.toString());
                                 }
@@ -2045,40 +2045,13 @@ UIClass.prototype.uploadImg = function(cb, upType){
     }
     var fileList = [];
     var renameObj = null;
-    if(fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))) renameObj = JSON.parse(fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json')))
-
-    // 生成改名列表清单
-    if(!!that.argv.v){    
-        gulp.src(that.imgFiles, {base:path.normalize(config.root_mediastyle)})
-            .pipe(hash({
-                "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
-            }))
-            .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
-                //覆盖部分gulp-hash-list插件属性
-                var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
-                if(renameObj[srcPath]) {
-                    file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
-                    file.hashFilename = path.basename(renameObj[srcPath]);
-                }
-            })))
-            .pipe(hash.manifest('rev-css_'+(new Date().getTime())+'.json')) //生成临时json用于后面合并
-            .pipe(gulp.dest(that.cssFilePath))
-            .pipe(next(function(){
-                //合并json
-                gulp.src(path.join(that.cssFilePath, 'rev-css_*.json'))
-                    .pipe(save('before-rm-json'))
-                    .pipe(rm())
-                    .pipe(save.restore('before-rm-json'))
-                    .pipe(gulpif(!!that.argv.v, merge({
-                        fileName: 'rev-css.json',
-                        startObj: renameObj || {}
-                    })))
-                    .pipe(gulp.dest(that.cssFilePath));
-            }));
-    }
     
     //上传
     function upImg(key){
+        if(!!that.argv.v && fs.existsSync(path.join(that.cssFilePath, 'rev-css.json'))){
+            var fileCont = fs.readFileSync(path.join(that.cssFilePath, 'rev-css.json'));
+            if(fileCont.length) renameObj = JSON.parse(fileCont.toString());
+        }
         var imageminParamObj = {
             quality: '65-80',
             optimizationLevel: 3,
@@ -2094,6 +2067,23 @@ UIClass.prototype.uploadImg = function(cb, upType){
             .pipe(gulpif(!!that.argv.v, hash({
                 "template": "{name}_" + (that.argv.v == 'RENAME_SELF' && !!that.argv.c ? that.argv.c : "{hash}") + "{ext}?max_age=2592000"
             })))
+            .pipe(gulpif(!!that.argv.v && that.argv.v == 'RENAME_LAST', tap(function(file){
+                //覆盖部分gulp-hash-list插件属性
+                var srcPath = Tools.formatPath(path.join(path.dirname(file.relative), file.origFilename));
+                if(renameObj[srcPath]) {
+                    file.path = Tools.formatPath(file.path).replace(file.hashFilename.split('?')[0], path.basename(renameObj[srcPath]).split('?')[0]);
+                    file.hashFilename = path.basename(renameObj[srcPath]);
+                }
+            })))
+            .pipe(gulpif(!!that.argv.v, save('before-merge-json')))
+            .pipe(gulpif(!!that.argv.v, hash.manifest('rev-css_'+(new Date().getTime())+'.json')))
+            .pipe(gulpif(!!that.argv.v, addsrc(path.join(that.cssFilePath, 'rev-css_*.json'))))
+            .pipe(gulpif(!!that.argv.v, merge({
+                fileName: 'rev-css.json',
+                startObj: renameObj || {}
+            })))
+            .pipe(gulpif(!!that.argv.v, gulp.dest(that.cssFilePath)))
+            .pipe(gulpif(!!that.argv.v, save.restore('before-merge-json')))
             .pipe(next(function(fileListArr){
                 fileList = fileList.concat(fileListArr);
             }))
